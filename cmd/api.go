@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"github.com/Lord-Y/synker/api"
 	"github.com/urfave/cli/v2"
 )
 
@@ -11,8 +10,17 @@ func API(c *cli.Context) (z *cli.Command) {
 	return &cli.Command{
 		Name:  "api",
 		Usage: "Start api server",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config-file",
+				Aliases:     []string{"c"},
+				Usage:       "Config file name",
+				Required:    true,
+				Destination: &cmdValidate.ConfigFile,
+			},
+		},
 		Action: func(c *cli.Context) error {
-			api.Run()
+			cmdAPI.Run()
 			return nil
 		},
 	}
