@@ -131,11 +131,15 @@ services:
     - elasticsearchc01
     - elasticsearchc02
     - elasticsearchc03
+    - etcdc01
+    - etcdc02
+    - etcdc03
     ports:
     - 1936:1936
-    - 9201:9201
-    - 26258:26258
-    - 8081:8080
+    - 9200:9200
+    - 26257:26257
+    - 8080:8080
+    - 2379:2379
     volumes:
     - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
@@ -155,6 +159,69 @@ services:
     - ./cockroach_init.sh:/usr/local/bin/cockroach_init.sh:ro
     networks:
     - synker_cluster
+  etcdc01:
+    image: quay.io/coreos/etcd:v3.5.1
+    container_name: etcdc01
+    environment:
+    - NODE_NAME=etcdc01
+    - NODE_NAME1=etcdc01
+    - NODE_NAME2=etcdc02
+    - NODE_NAME3=etcdc03
+    - DATA_DIR=/etcd/data
+    - INITIAL_CLUSTER_TOKEN=synker
+    - INITIAL_CLUSTER_STATE=new
+    volumes:
+    - etcdc01:/etcd/data
+    - ./etcd.sh:/usr/local/bin/etcd.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/etcd.sh
+  etcdc02:
+    image: quay.io/coreos/etcd:v3.5.1
+    container_name: etcdc02
+    environment:
+    - NODE_NAME=etcdc02
+    - NODE_NAME1=etcdc01
+    - NODE_NAME2=etcdc02
+    - NODE_NAME3=etcdc03
+    - DATA_DIR=/etcd/data
+    - INITIAL_CLUSTER_TOKEN=synker
+    - INITIAL_CLUSTER_STATE=new
+    volumes:
+    - etcdc02:/etcd/data
+    - ./etcd.sh:/usr/local/bin/etcd.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/etcd.sh
+  etcdc03:
+    image: quay.io/coreos/etcd:v3.5.1
+    container_name: etcdc03
+    environment:
+    - NODE_NAME=etcdc03
+    - NODE_NAME1=etcdc01
+    - NODE_NAME2=etcdc02
+    - NODE_NAME3=etcdc03
+    - DATA_DIR=/etcd/data
+    - INITIAL_CLUSTER_TOKEN=synker
+    - INITIAL_CLUSTER_STATE=new
+    volumes:
+    - etcdc03:/etcd/data
+    - ./etcd.sh:/usr/local/bin/etcd.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/etcd.sh
 
 networks:
   synker_cluster:
@@ -166,3 +233,6 @@ volumes:
   elasticsearchc01:
   elasticsearchc02:
   elasticsearchc03:
+  etcdc01:
+  etcdc02:
+  etcdc03:
