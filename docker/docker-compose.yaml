@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  cockroach01:
+    image: cockroachdb/cockroach:latest-v21.1
+    container_name: cockroach01
+    ports:
+    - 26257:26257
+    - 8081:8080
+    volumes:
+    - cockroach01:/cockroach/cockroach-data
+    networks:
+    - synker
+    restart: always
+    command:
+    - start-single-node
+    - --insecure
+  elasticsearch01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: elasticsearch01
+    environment:
+    - node.name=elasticsearch01
+    - discovery.type=single-node
+    - cluster.name=synker
+    - cluster.initial_master_nodes=elasticsearch01
+    - bootstrap.memory_lock=true
+    - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
+    - http.cors.enabled=true
+    - http.cors.allow-origin=*
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+    - ALL
+    # privileged: true
+    volumes:
+    - /var/log
+    - elasticsearch01:/usr/share/elasticsearch/data
+    networks:
+    - synker
+    restart: always
+    ports:
+    - 9200:9200
+    - 9300:9300
+
+networks:
+  synker:
+
+volumes:
+  cockroach01:
+  elasticsearch01:
