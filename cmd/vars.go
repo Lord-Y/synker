@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/Lord-Y/synker/api"
 	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/validate"
 )
@@ -13,4 +14,5 @@ var (
 	Version      = "0.0.1-dev"
 	configStruct models.Configuration
 	cmdValidate  validate.Validate
+	cmdAPI       api.API
 )
