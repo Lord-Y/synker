@@ -32,6 +32,21 @@ func init() {
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
+	if strings.TrimSpace(os.Getenv("SKR_ETCD_URI")) == "" {
+		msg := "SKR_ETCD_URI environment variable must be set"
+		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+		return
+	}
+	if strings.TrimSpace(os.Getenv("SKR_ETCD_USER")) == "" {
+		msg := "SKR_ETCD_USER environment variable must be set"
+		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+		return
+	}
+	if strings.TrimSpace(os.Getenv("SKR_ETCD_PASSWORD")) == "" {
+		msg := "SKR_ETCD_PASSWORD environment variable must be set"
+		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+		return
+	}
 }
 
 // Run will start the api server
