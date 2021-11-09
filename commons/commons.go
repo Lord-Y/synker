@@ -11,8 +11,8 @@ func BuildDSN() string {
 	return strings.TrimSpace(os.Getenv("SKR_PG_URI"))
 }
 
-// GetEleasticsearchURI permit to retrieve OS env variable
-func GetEleasticsearchURI() string {
+// GetElasticsearchURI permit to retrieve OS env variable
+func GetElasticsearchURI() string {
 	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_URI"))
 }
 
