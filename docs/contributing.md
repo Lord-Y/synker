@@ -11,6 +11,20 @@ Then, enable the hook in our project:
 git config core.hooksPath .githooks
 ```
 
+## Starting the cluster
+
+Set `sysctl` values permanently for elasticsearch if not already done in your user environment:
+```bash
+cat <<EOF | sudo tee -a /etc/sysctl.d/10-custom.conf
+vm.max_map_count=262144
+EOF
+sudo sysctl -p /etc/sysctl.d/10-custom.conf
+```
+Start the cluster:
+```bash
+sudo docker-compose -f docker/docker-compose-cluster.yaml up -d
+```
+
 ## Set default variables
 
 ```bash
