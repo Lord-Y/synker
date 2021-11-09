@@ -226,6 +226,7 @@ func TestWatch(t *testing.T) {
 		assert.FailNow("Failed to connect to etcd cluster")
 		return
 	}
+	defer cliput.Close()
 	for _, tc := range tests {
 		if tc.fail {
 			_, err := Watch(cli, tc.key)
@@ -275,6 +276,7 @@ func TestWatchWithPrefix(t *testing.T) {
 		assert.FailNow("Failed to connect to etcd cluster")
 		return
 	}
+	defer cliput.Close()
 	for _, tc := range tests {
 		if tc.fail {
 			_, err := WatchWithPrefix(cli, tc.key)
