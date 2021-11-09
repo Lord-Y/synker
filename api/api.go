@@ -1,3 +1,4 @@
+// Package api assemble all requirements to start the api
 package api
 
 import (

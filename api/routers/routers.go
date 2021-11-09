@@ -1,3 +1,4 @@
+// Package routers assemble all routes for the api
 package routers
 
 import (
