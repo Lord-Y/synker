@@ -1,0 +1,35 @@
+# Contributing
+
+In order to contribute to our project, we will define here all requirements.
+
+## Git hooks
+
+You need first do install [golangci-lint](https://golangci-lint.run/usage/install/)
+
+Then, enable the hook in our project:
+```bash
+git config core.hooksPath .githooks
+```
+
+## Set default variables
+
+```bash
+export SKR_PG_URI="postgres://root:@127.0.0.1:26257/synker"
+export SKR_ELASTICSEARCH_URI="http://127.0.0.1:9200"
+export SKR_ETCD_URI="http://127.0.0.1:2379"
+export SKR_ETCD_USER=synker
+export SKR_ETCD_PASSWORD=synker
+```
+
+## Golang test
+
+We will perform test with coverage like so:
+```bash
+go test -v ./... -coverprofile=coverage.out
+
+# Open coverage result in your browser
+go tool cover -html=coverage.out
+
+# Get coverage result in CLI
+go tool cover -func=coverage.out
+```
