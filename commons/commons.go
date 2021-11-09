@@ -17,8 +17,8 @@ func GetEleasticsearchURI() string {
 }
 
 // GetEtcdURI permit to retrieve OS env variable
-func GetEtcdURI() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_URI"))
+func GetEtcdURI() []string {
+	return strings.Split(strings.TrimSpace(os.Getenv("SKR_ETCD_URI")), ",")
 }
 
 // GetEtcdUser permit to retrieve OS env variable
