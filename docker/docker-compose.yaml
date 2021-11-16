@@ -1,28 +1,14 @@
 version: '3'
 
 services:
-  cockroach01:
-    image: cockroachdb/cockroach:latest-v21.1
-    container_name: cockroach01
-    ports:
-    - 26257:26257
-    - 8081:8080
-    volumes:
-    - cockroach01:/cockroach/cockroach-data
-    networks:
-    - synker
-    restart: always
-    command:
-    - start-single-node
-    - --insecure
-  elasticsearch01:
+  elasticsearchc01:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
-    container_name: elasticsearch01
+    container_name: elasticsearchc01
     environment:
-    - node.name=elasticsearch01
-    - discovery.type=single-node
+    - node.name=elasticsearchc01
     - cluster.name=synker
-    - cluster.initial_master_nodes=elasticsearch01
+    - discovery.seed_hosts=elasticsearchc02,elasticsearchc03
+    - cluster.initial_master_nodes=elasticsearchc01,elasticsearchc02,elasticsearchc03
     - bootstrap.memory_lock=true
     - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
     - http.cors.enabled=true
@@ -39,17 +25,160 @@ services:
     # privileged: true
     volumes:
     - /var/log
-    - elasticsearch01:/usr/share/elasticsearch/data
+    - elasticsearchc01:/usr/share/elasticsearch/data
     networks:
-    - synker
+    - synker_cluster
     restart: always
+  elasticsearchc02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: elasticsearchc02
+    environment:
+    - node.name=elasticsearchc02
+    - cluster.name=synker
+    - discovery.seed_hosts=elasticsearchc01,elasticsearchc03
+    - cluster.initial_master_nodes=elasticsearchc01,elasticsearchc02,elasticsearchc03
+    - bootstrap.memory_lock=true
+    - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
+    - http.cors.enabled=true
+    - http.cors.allow-origin=*
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+    - ALL
+    # privileged: true
+    volumes:
+    - /var/log
+    - elasticsearchc02:/usr/share/elasticsearch/data
+    networks:
+    - synker_cluster
+    restart: always
+  elasticsearchc03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: elasticsearchc03
+    environment:
+    - node.name=elasticsearchc03
+    - cluster.name=synker
+    - discovery.seed_hosts=elasticsearchc01,elasticsearchc02
+    - cluster.initial_master_nodes=elasticsearchc01,elasticsearchc02,elasticsearchc03
+    - bootstrap.memory_lock=true
+    - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
+    - http.cors.enabled=true
+    - http.cors.allow-origin=*
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+    - ALL
+    # privileged: true
+    volumes:
+    - /var/log
+    - elasticsearchc03:/usr/share/elasticsearch/data
+    networks:
+    - synker_cluster
+    restart: always
+  haproxy:
+    image: haproxy:2.4-bullseye
+    container_name: haproxy
+    depends_on:
+    - elasticsearchc01
+    - elasticsearchc02
+    - elasticsearchc03
+    - redpandac01
+    - redpandac02
+    - redpandac03
     ports:
+    - 1936:1936
     - 9200:9200
-    - 9300:9300
+    - 9092:9092
+    volumes:
+    - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+    - synker_cluster
+  redpandac01:
+    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    container_name: redpandac01
+    environment:
+    - LEADER=true
+    - SEED_NODE_NAME=redpandac01
+    - NODE_NAME=redpandac02
+    - NODE_ID=0
+    volumes:
+    - redpandac01:/var/lib/redpanda/data
+    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/redpanda.sh
+  redpandac02:
+    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    container_name: redpandac02
+    environment:
+    - SEED_NODE_NAME=redpandac01
+    - NODE_NAME=redpandac02
+    - NODE_ID=1
+    volumes:
+    - redpandac02:/var/lib/redpanda/data
+    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/redpanda.sh
+  redpandac03:
+    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    container_name: redpandac03
+    environment:
+    - SEED_NODE_NAME=redpandac01
+    - NODE_NAME=redpandac03
+    - NODE_ID=2
+    volumes:
+    - redpandac03:/var/lib/redpanda/data
+    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
+    networks:
+    - synker_cluster
+    restart: always
+    entrypoint: 
+    - bash
+    - -c
+    - /usr/local/bin/redpanda.sh
+  # redpanda_cluster_role_setup:
+  #   image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+  #   container_name: redpanda_cluster_role_setup
+  #   environment:
+  #   - USER_ROOT_PASSWORD=admin
+  #   - USER_SYNKER_PASSWORD=synker
+  #   entrypoint: 
+  #   - bash
+  #   - -c
+  #   - /usr/local/bin/redpanda_auth.sh
+  #   depends_on:
+  #   - haproxy
+  #   volumes:
+  #   - ./redpanda_auth.sh:/usr/local/bin/redpanda_auth.sh:ro
+  #   networks:
+  #   - synker_cluster
 
 networks:
-  synker:
+  synker_cluster:
 
 volumes:
-  cockroach01:
-  elasticsearch01:
+  elasticsearchc01:
+  elasticsearchc02:
+  elasticsearchc03:
+  redpandac01:
+  redpandac02:
+  redpandac03:
