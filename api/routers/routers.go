@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Lord-Y/synker/api/crdb"
 	"github.com/Lord-Y/synker/api/health"
 	apiLogger "github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/tools"
@@ -71,10 +72,13 @@ func SetupRouter() *gin.Engine {
 		p.Use(router)
 	}
 
-	v1 := router.Group("/api/v1/synker")
+	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/health", health.Health)
 		v1.GET("/healthz", health.Healthz)
+
+		v1.POST("/crdb/trigger", crdb.Trigger)
+		v1.PUT("/crdb/trigger", crdb.Trigger)
 	}
 	return router
 }
