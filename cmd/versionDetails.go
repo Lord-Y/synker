@@ -1,4 +1,4 @@
-// Package cmd manage all commands required to launch cypress-parallel-cli
+// Package cmd manage all commands required to run synker
 package cmd
 
 import (
