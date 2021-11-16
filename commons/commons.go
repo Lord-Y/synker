@@ -16,32 +16,42 @@ func GetElasticsearchURI() string {
 	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_URI"))
 }
 
-// GetEtcdURI permit to retrieve OS env variable
-func GetEtcdURI() []string {
-	return strings.Split(strings.TrimSpace(os.Getenv("SKR_ETCD_URI")), ",")
+// GetElasticsearchURI permit to retrieve OS env variable
+func GetElasticsearchUser() string {
+	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_USER"))
 }
 
-// GetEtcdUser permit to retrieve OS env variable
-func GetEtcdUser() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_USER"))
+// GetElasticsearchURI permit to retrieve OS env variable
+func GetElasticsearchPassword() string {
+	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_PASSWORD"))
 }
 
-// GetEtcdPassword permit to retrieve OS env variable
-func GetEtcdPassword() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_PASSWORD"))
+// GetKafkaURI permit to retrieve OS env variable
+func GetKafkaURI() []string {
+	return strings.Split(strings.TrimSpace(os.Getenv("SKR_KAFKA_URI")), ",")
 }
 
-// GetEtcdCACert permit to retrieve OS env variable
-func GetEtcdCACert() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_CACERT"))
+// GetKafkaUser permit to retrieve OS env variable
+func GetKafkaUser() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_USER"))
 }
 
-// GetEtcdCert permit to retrieve OS env variable
-func GetEtcdCert() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_CERT"))
+// GetKafkaPassword permit to retrieve OS env variable
+func GetKafkaPassword() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_PASSWORD"))
 }
 
-// GetEtcdKey permit to retrieve OS env variable
-func GetEtcdKey() string {
-	return strings.TrimSpace(os.Getenv("SKR_ETCD_KEY"))
+// GetKafkaCACert permit to retrieve OS env variable
+func GetKafkaCACert() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_CACERT"))
+}
+
+// GetKafkaCert permit to retrieve OS env variable
+func GetKafkaCert() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_CERT"))
+}
+
+// GetKafkaKey permit to retrieve OS env variable
+func GetKafkaKey() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_KEY"))
 }
