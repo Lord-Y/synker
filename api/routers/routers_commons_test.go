@@ -13,7 +13,7 @@ func TestHealth(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	router := SetupRouter()
-	w, err := performRequest(router, headers, "GET", "/api/v1/synker/health", "")
+	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
 		return
@@ -29,7 +29,7 @@ func TestHealth_no_xrequestid(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	router := SetupRouter()
-	w, err := performRequest(router, headers, "GET", "/api/v1/synker/health", "")
+	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
 		return
@@ -45,7 +45,7 @@ func TestHealthz(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	router := SetupRouter()
-	w, err := performRequest(router, headers, "GET", "/api/v1/synker/healthz", "")
+	w, err := performRequest(router, headers, "GET", "/api/v1/healthz", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
 		return
@@ -62,7 +62,7 @@ func TestHealth_prometheus(t *testing.T) {
 
 	os.Setenv("SKR_PROMETHEUS", "1")
 	router := SetupRouter()
-	w, err := performRequest(router, headers, "GET", "/api/v1/synker/health", "")
+	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
 		return
@@ -81,7 +81,7 @@ func TestHealth_prometheus_port(t *testing.T) {
 	os.Setenv("SKR_PROMETHEUS", "1")
 	os.Setenv("SKR_PROMETHEUS_PORT", "9101")
 	router := SetupRouter()
-	w, err := performRequest(router, headers, "GET", "/api/v1/synker/health", "")
+	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
 		return
