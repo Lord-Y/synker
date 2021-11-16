@@ -1,7 +1,13 @@
 #!/bin/bash
 
-set -x
+set -euo pipefail
 
-/cockroach/cockroach sql --insecure --host ${COCKROACH_HOST} --execute "SELECT 1" || /cockroach/cockroach init --insecure --host ${COCKROACH_HOST}
+COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}')
+cockroach sql --insecure --host ${COCKROACH_HOST} --execute "SHOW CLUSTER SETTING kv.rangefeed.enabled" --format tsv | \
+  grep true || \
+  cockroach sql --insecure --host ${COCKROACH_HOST} --execute "SET CLUSTER SETTING kv.rangefeed.enabled = true"
 
-exit 0
+
+cockroach sql --insecure --host ${COCKROACH_HOST} --execute "SHOW CHANGEFEED JOBS" --format tsv | \
+  grep kafka || \
+  cockroach sql --insecure --host ${COCKROACH_HOST} --execute "CREATE CHANGEFEED FOR TABLE promo_codes, rides, user_promo_codes, users, vehicle_location_histories, vehicles INTO 'kafka://localhost:9092' WITH updated"
