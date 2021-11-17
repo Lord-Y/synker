@@ -11,11 +11,11 @@ func Validate(c *cli.Context) (z *cli.Command) {
 		Usage: "options related to configuration file",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:        "config-file",
+				Name:        "config-dir",
 				Aliases:     []string{"c"},
-				Usage:       "Config file name",
+				Usage:       "Config dir name holding files",
 				Required:    true,
-				Destination: &cmdValidate.ConfigFile,
+				Destination: &cmdValidate.ConfigDir,
 			},
 		},
 		Action: func(c *cli.Context) error {

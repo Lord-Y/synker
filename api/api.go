@@ -45,8 +45,8 @@ func (c *API) Run() {
 	var srv *http.Server
 	router := routers.SetupRouter()
 
-	os.Setenv("SKR_CONFIG_FILE", c.ConfigFile)
-	defer os.Unsetenv("SKR_CONFIG_FILE")
+	os.Setenv("SKR_CONFIG_DIR", c.ConfigDir)
+	defer os.Unsetenv("SKR_CONFIG_DIR")
 	appPort := strings.TrimSpace(os.Getenv("SKR_API_PORT"))
 	if appPort != "" {
 		srv = &http.Server{

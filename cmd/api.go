@@ -16,7 +16,7 @@ func API(c *cli.Context) (z *cli.Command) {
 				Aliases:     []string{"c"},
 				Usage:       "Config file name",
 				Required:    true,
-				Destination: &cmdValidate.ConfigFile,
+				Destination: &cmdValidate.ConfigDir,
 			},
 		},
 		Action: func(c *cli.Context) error {

@@ -14,5 +14,5 @@ type Validate models.Configuration
 
 // Run will run the validate command
 func (c *Validate) Run() {
-	log.Info().Msgf("Config file is %s", c.ConfigFile)
+	log.Info().Msgf("Config file is %s", c.ConfigDir)
 }
