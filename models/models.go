@@ -3,5 +3,5 @@ package models
 
 // Configuration reference all requirements relation to the file config
 type Configuration struct {
-	ConfigFile string `json:"config" yaml:"config"` // config file path
+	ConfigDir string `json:"configDir" yaml:"configDir"` // config dir path
 }
