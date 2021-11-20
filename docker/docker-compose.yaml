@@ -92,13 +92,9 @@ services:
     - elasticsearchc01
     - elasticsearchc02
     - elasticsearchc03
-    - redpandac01
-    - redpandac02
-    - redpandac03
     ports:
     - 1936:1936
     - 9200:9200
-    - 9092:9092
     volumes:
     - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
@@ -106,71 +102,117 @@ services:
   redpandac01:
     image: docker.vectorized.io/vectorized/redpanda:v21.10.1
     container_name: redpandac01
-    environment:
-    - LEADER=true
-    - SEED_NODE_NAME=redpandac01
-    - NODE_NAME=redpandac01
-    - NODE_ID=0
+    hostname: redpandac01
     volumes:
     - redpandac01:/var/lib/redpanda/data
-    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
     networks:
     - synker_cluster
+    ports:
+    - 8082:8082
+    - 9092:9092
+    - 9644:9644
     restart: always
-    entrypoint: 
-    - bash
-    - -c
-    - /usr/local/bin/redpanda.sh
+    command:
+    - redpanda
+    - start
+    - --smp
+    - "1"
+    - --memory
+    - 1G
+    - --reserve-memory
+    - 0M
+    - --overprovisioned
+    - --node-id
+    - "0"
+    - --check=false
+    - --pandaproxy-addr
+    - 0.0.0.0:8082
+    - --advertise-pandaproxy-addr
+    - 127.0.0.1:8082
+    - --kafka-addr
+    - 0.0.0.0:9092
+    - --advertise-kafka-addr
+    - 127.0.0.1:9092
+    - --rpc-addr
+    - 0.0.0.0:33145
+    - --advertise-rpc-addr
+    - redpandac01:33145
   redpandac02:
     image: docker.vectorized.io/vectorized/redpanda:v21.10.1
     container_name: redpandac02
-    environment:
-    - SEED_NODE_NAME=redpandac01
-    - NODE_NAME=redpandac02
-    - NODE_ID=1
+    hostname: redpandac02
     volumes:
     - redpandac02:/var/lib/redpanda/data
-    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
     networks:
     - synker_cluster
+    ports:
+    - 9093:9093
     restart: always
-    entrypoint: 
-    - bash
-    - -c
-    - /usr/local/bin/redpanda.sh
+    command:
+    - redpanda
+    - start
+    - --smp
+    - "1"
+    - --memory
+    - 1G
+    - --reserve-memory
+    - 0M
+    - --overprovisioned
+    - --node-id
+    - "1"
+    - --seeds
+    - redpandac01:33145
+    - --check=false
+    - --pandaproxy-addr
+    - 0.0.0.0:8083
+    - --advertise-pandaproxy-addr
+    - 127.0.0.1:8083
+    - --kafka-addr
+    - 0.0.0.0:9093
+    - --advertise-kafka-addr
+    - 127.0.0.1:9093
+    - --rpc-addr
+    - 0.0.0.0:33146
+    - --advertise-rpc-addr
+    - redpandac02:33146
   redpandac03:
     image: docker.vectorized.io/vectorized/redpanda:v21.10.1
     container_name: redpandac03
-    environment:
-    - SEED_NODE_NAME=redpandac01
-    - NODE_NAME=redpandac03
-    - NODE_ID=2
+    hostname: redpandac03
     volumes:
     - redpandac03:/var/lib/redpanda/data
-    - ./redpanda.sh:/usr/local/bin/redpanda.sh:ro
     networks:
     - synker_cluster
+    ports:
+    - 9094:9094
     restart: always
-    entrypoint: 
-    - bash
-    - -c
-    - /usr/local/bin/redpanda.sh
-  # redpanda_cluster_role_setup:
-  #   image: docker.vectorized.io/vectorized/redpanda:v21.10.1
-  #   container_name: redpanda_cluster_role_setup
-  #   environment:
-  #   - USER_ROOT_PASSWORD=admin
-  #   - USER_SYNKER_PASSWORD=synker
-  #   entrypoint: 
-  #   - bash
-  #   - -c
-  #   - /usr/local/bin/redpanda_auth.sh
-  #   depends_on:
-  #   - haproxy
-  #   volumes:
-  #   - ./redpanda_auth.sh:/usr/local/bin/redpanda_auth.sh:ro
-  #   networks:
-  #   - synker_cluster
+    command:
+    - redpanda
+    - start
+    - --smp
+    - "1"
+    - --memory
+    - 1G
+    - --reserve-memory
+    - 0M
+    - --overprovisioned
+    - --node-id
+    - "2"
+    - --seeds
+    - redpandac01:33145
+    - --check=false
+    - --pandaproxy-addr
+    - 0.0.0.0:8084
+    - --advertise-pandaproxy-addr
+    - 127.0.0.1:8084
+    - --kafka-addr
+    - 0.0.0.0:9094
+    - --advertise-kafka-addr
+    - 127.0.0.1:9094
+    - --rpc-addr
+    - 0.0.0.0:33147
+    - --advertise-rpc-addr
+    - redpandac03:33147
 
 networks:
   synker_cluster:
