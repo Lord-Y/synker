@@ -27,8 +27,13 @@ func GetElasticsearchPassword() string {
 }
 
 // GetKafkaURI permit to retrieve OS env variable
-func GetKafkaURI() []string {
-	return strings.Split(strings.TrimSpace(os.Getenv("SKR_KAFKA_URI")), ",")
+func GetKafkaURI() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_URI"))
+}
+
+// GetKafkaScram permit to retrieve OS env variable
+func GetKafkaScram() string {
+	return strings.TrimSpace(os.Getenv("SKR_KAFKA_SCRAM"))
 }
 
 // GetKafkaUser permit to retrieve OS env variable

@@ -109,7 +109,7 @@ services:
     environment:
     - LEADER=true
     - SEED_NODE_NAME=redpandac01
-    - NODE_NAME=redpandac02
+    - NODE_NAME=redpandac01
     - NODE_ID=0
     volumes:
     - redpandac01:/var/lib/redpanda/data

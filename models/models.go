@@ -5,3 +5,23 @@ package models
 type Configuration struct {
 	ConfigDir string `json:"configDir" yaml:"configDir"` // config dir path
 }
+
+// CreateTopic reference all the possible requirements to create a topic
+type CreateTopic struct {
+	Name              string `json:"name" yaml:"name"`                           // topic name
+	NumPartitions     int    `json:"numPartitions" yaml:"numPartitions"`         // partition number
+	ReplicationFactor int    `json:"replicationFactor" yaml:"replicationFactor"` // replication factor
+	TopicConfig       []TopicConfig
+}
+
+// TopicConfig
+type TopicConfig struct {
+	Key   string `json:"key" yaml:"key"`     // config key
+	Value string `json:"value" yaml:"value"` // config value
+}
+
+type KafkaWriteMessage struct {
+	TopicName string `json:"name" yaml:"name"`   // topic name
+	Key       string `json:"key" yaml:"key"`     // message key
+	Value     string `json:"value" yaml:"value"` // message value
+}
