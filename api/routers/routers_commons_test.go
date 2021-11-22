@@ -61,6 +61,7 @@ func TestHealth_prometheus(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	os.Setenv("SKR_PROMETHEUS", "1")
+	defer os.Unsetenv("SKR_PROMETHEUS")
 	router := SetupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
@@ -70,7 +71,6 @@ func TestHealth_prometheus(t *testing.T) {
 
 	assert.Equal(200, w.Code, "Failed to perform http GET request")
 	assert.Contains(w.Body.String(), `{"health":"OK"}`, "Failed to get right body content")
-	os.Unsetenv("SKR_PROMETHEUS")
 }
 
 func TestHealth_prometheus_port(t *testing.T) {
@@ -80,6 +80,8 @@ func TestHealth_prometheus_port(t *testing.T) {
 
 	os.Setenv("SKR_PROMETHEUS", "1")
 	os.Setenv("SKR_PROMETHEUS_PORT", "9101")
+	defer os.Unsetenv("SKR_PROMETHEUS")
+	defer os.Unsetenv("SKR_PROMETHEUS_PORT")
 	router := SetupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
@@ -89,6 +91,4 @@ func TestHealth_prometheus_port(t *testing.T) {
 
 	assert.Equal(200, w.Code, "Failed to perform http GET request")
 	assert.Contains(w.Body.String(), `{"health":"OK"}`, "Failed to get right body content")
-	os.Unsetenv("SKR_PROMETHEUS")
-	os.Unsetenv("SKR_PROMETHEUS_PORT")
 }
