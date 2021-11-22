@@ -16,6 +16,14 @@ func GetElasticsearchURI() string {
 	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_URI"))
 }
 
+// IsElasticsearchAuthEnabled permit to check if elasticsearch auth is enabled
+func IsElasticsearchAuthEnabled() bool {
+	if GetElasticsearchUser() != "" && GetElasticsearchPassword() != "" {
+		return true
+	}
+	return false
+}
+
 // GetElasticsearchURI permit to retrieve OS env variable
 func GetElasticsearchUser() string {
 	return strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_USER"))
