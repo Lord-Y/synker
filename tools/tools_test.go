@@ -209,3 +209,161 @@ func TestRandomValueFromSlice(t *testing.T) {
 		}
 	}
 }
+
+func TestIsJSON(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := []struct {
+		value    string
+		expected bool
+	}{
+		{
+			value:    "v",
+			expected: false,
+		},
+		{
+			value:    `{"a": "b"}`,
+			expected: true,
+		},
+		{
+			value:    `{'a': 'b'}`,
+			expected: false,
+		},
+		{
+			value:    `"a": "b"`,
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		z := IsJSON(tc.value)
+		assert.Equal(tc.expected, z)
+	}
+}
+
+func TestIsJSONFromBytes(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := []struct {
+		value    string
+		expected bool
+	}{
+		{
+			value:    "v",
+			expected: false,
+		},
+		{
+			value:    `{"a": "b"}`,
+			expected: true,
+		},
+		{
+			value:    `{'a': 'b'}`,
+			expected: false,
+		},
+		{
+			value:    `"a": "b"`,
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		z := IsJSONFromBytes([]byte(tc.value))
+		assert.Equal(tc.expected, z)
+	}
+}
+
+func TestIsYaml(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := []struct {
+		value    string
+		expected bool
+	}{
+		{
+			value:    "v",
+			expected: false,
+		},
+		{
+			value:    `a: b`,
+			expected: true,
+		},
+		{
+			value:    `'a': `,
+			expected: true,
+		},
+		{
+			value:    `'a': 'b'`,
+			expected: true,
+		},
+		{
+			value:    `"a": "b"`,
+			expected: true,
+		},
+	}
+
+	for _, tc := range tests {
+		z := IsYaml(tc.value)
+		assert.Equal(tc.expected, z)
+	}
+}
+
+func TestIsYamlFromBytes(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := []struct {
+		value    string
+		expected bool
+	}{
+		{
+			value:    "v",
+			expected: false,
+		},
+		{
+			value:    `a: b`,
+			expected: true,
+		},
+		{
+			value:    `'a': `,
+			expected: true,
+		},
+		{
+			value:    `'a': 'b'`,
+			expected: true,
+		},
+		{
+			value:    `"a": "b"`,
+			expected: true,
+		},
+	}
+
+	for _, tc := range tests {
+		z := IsYamlFromBytes([]byte(tc.value))
+		assert.Equal(tc.expected, z)
+	}
+}
+
+func TestInSlice(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := []struct {
+		value    string
+		array    []string
+		expected bool
+	}{
+		{
+			value:    "value",
+			array:    []string{"a", "b", "value"},
+			expected: true,
+		},
+		{
+			value:    "v",
+			array:    []string{"a", "b", "value"},
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		z := InSlice(tc.value, tc.array)
+		assert.Equal(tc.expected, z)
+	}
+}
