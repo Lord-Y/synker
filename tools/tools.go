@@ -3,11 +3,14 @@ package tools
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 // RandString return random string with max int size
@@ -120,4 +123,46 @@ func RandomValueFromSlice(s []string) string {
 		n[i] = s[v]
 	}
 	return n[0]
+}
+
+// IsJSON verify is content is a valid json
+func IsJSON(s string) (b bool) {
+	var m map[string]interface{}
+	err := json.Unmarshal([]byte(s), &m)
+	return err == nil
+}
+
+// IsJSONFromBytes verify is content is a valid json
+func IsJSONFromBytes(s []byte) (b bool) {
+	var m map[string]interface{}
+	err := json.Unmarshal(s, &m)
+	return err == nil
+}
+
+// IsYaml verify is content is a valid yaml
+func IsYaml(s string) (b bool) {
+	var m map[string]interface{}
+	var ms []map[string]interface{}
+	err := yaml.Unmarshal([]byte(s), &m)
+	errms := yaml.Unmarshal([]byte(s), &ms)
+	return err == nil || errms == nil
+}
+
+// IsYamlFromBytes verify is content is a valid yaml
+func IsYamlFromBytes(s []byte) (b bool) {
+	var m map[string]interface{}
+	var ms []map[string]interface{}
+	err := yaml.Unmarshal(s, &m)
+	errms := yaml.Unmarshal(s, &ms)
+	return err == nil || errms == nil
+}
+
+// InSlice find value exist in array
+func InSlice(val string, inSlice []string) (b bool) {
+	for i := range inSlice {
+		if val == inSlice[i] {
+			return true
+		}
+	}
+	return false
 }

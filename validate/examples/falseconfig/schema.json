@@ -1,0 +1,72 @@
+{
+  "schemas": [
+    {
+      "name": "test",
+      "topic": {
+        "name": "default.movr.public.test",
+        "numPartitions": 1,
+        "replicationFactor": 3,
+        "config": [
+          {
+            "key": "max.message.bytes",
+            "value": 128000
+          }
+        ]
+      },
+      "sql": {
+        "type": "plain",
+        "query": "SELECT * FROM test"
+      },
+      "elasticsearch": {
+        "mapping": {
+          "settings": {
+            "index.requests.cache.enable": true,
+            "index": {
+              "number_of_shards": 3,
+              "number_of_replicas": 2
+            },
+            "analysis": {
+              "normalizer": {
+                "lowerasciinormalizer": {
+                  "type": "custom",
+                  "filter": [
+                    "lowercase",
+                    "asciifolding"
+                  ]
+                }
+              }
+            }
+          },
+          "mappings": {
+            "dynamic_templates": [
+              {
+                "string_as_keyword": {
+                  "match_mapping_type": "string",
+                  "match": "*",
+                  "mapping": {
+                    "type": "keyword",
+                    "normalizer": "lowerasciinormalizer"
+                  }
+                }
+              }
+            ],
+            "properties": {
+              "announce_id": {
+                "normalizer": "lowerasciinormalizer",
+                "type": "keyword"
+              },
+              "user_org_id": {
+                "normalizer": "lowerasciinormalizer",
+                "type": "keyword"
+              },
+              "name_announce": {
+                "normalizer": "lowerasciinormalizer",
+                "type": "keyword"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
