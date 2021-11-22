@@ -33,8 +33,8 @@ func init() {
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
-	if strings.TrimSpace(os.Getenv("SKR_ETCD_URI")) == "" {
-		msg := "SKR_KAKFA_URI environment variable must be set"
+	if strings.TrimSpace(os.Getenv("SKR_KAFKA_URI")) == "" {
+		msg := "SKR_KAFKA_URI environment variable must be set"
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
