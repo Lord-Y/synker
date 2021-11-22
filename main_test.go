@@ -105,7 +105,7 @@ func TestValidate(t *testing.T) {
 				"synker",
 				"validate",
 				"-c",
-				"/tmp/test.yaml",
+				"validate/examples/schemas",
 			},
 			fail: false,
 		},
@@ -124,6 +124,30 @@ func TestValidate(t *testing.T) {
 			assert.NoError(err)
 		}
 	}
+}
+
+func TestValidate_fail_empty_dir(t *testing.T) {
+	assert := assert.New(t)
+	if os.Getenv("FATAL") == "1" {
+		os.Args = []string{
+			"synker",
+			"validate",
+		}
+		main()
+		return
+	}
+	cmd := exec.Command(
+		os.Args[0],
+		"synker",
+		"validate",
+		"-test.run=TestValidate_fail_empty_dir",
+	)
+	cmd.Env = append(os.Environ(), "FATAL=1")
+	err := cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+	assert.Error(err)
 }
 
 func TestValidate_fail(t *testing.T) {
