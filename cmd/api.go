@@ -12,15 +12,16 @@ func API(c *cli.Context) (z *cli.Command) {
 		Usage: "Start api server",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:        "config-file",
+				Name:        "config-dir",
 				Aliases:     []string{"c"},
-				Usage:       "Config file name",
+				Usage:       "Config dir name holding files",
 				Required:    true,
 				Destination: &cmdValidate.ConfigDir,
 			},
 		},
 		Action: func(c *cli.Context) error {
-			cmdAPI.Run()
+			cmdValidate.Run()
+			cmdAPI.Run(&cmdValidate)
 			return nil
 		},
 	}

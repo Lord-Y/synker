@@ -14,6 +14,7 @@ import (
 	"github.com/Lord-Y/synker/api/routers"
 	apiLogger "github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/models"
+	"github.com/Lord-Y/synker/validate"
 	"github.com/rs/zerolog/log"
 )
 
@@ -41,12 +42,24 @@ func init() {
 }
 
 // Run will start the api server
-func (c *API) Run() {
+func (c *API) Run(validated *validate.Validate) {
 	var srv *http.Server
 	router := routers.SetupRouter()
 
 	os.Setenv("SKR_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SKR_CONFIG_DIR")
+
+	err := validated.ManageTopics()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Fail to manage topics")
+		return
+	}
+	err = validated.ManageElasticsearchIndex()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Fail to manage elasticsearch indexes")
+		return
+	}
+
 	appPort := strings.TrimSpace(os.Getenv("SKR_API_PORT"))
 	if appPort != "" {
 		srv = &http.Server{
