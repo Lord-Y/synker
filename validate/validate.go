@@ -202,7 +202,6 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 					if err != nil {
 						return err
 					}
-					log.Info().Msgf("list alias %d", len(list.Indices))
 					if len(list.Indices) <= 1 {
 						alias_create, err := client.Alias().
 							Add(index, alias).
@@ -219,7 +218,6 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 							return fmt.Errorf("Fail to get alias creation ack")
 						}
 					}
-					log.Info().Msgf("aliases %+v", list)
 				} else {
 					return fmt.Errorf("Index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
 				}
