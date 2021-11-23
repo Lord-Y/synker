@@ -27,19 +27,20 @@ type CreateTopic struct {
 
 // TopicConfig store key/value pair use to configure the topic
 type TopicConfig struct {
-	Key   string `json:"key" yaml:"key"`     // config key
-	Value string `json:"value" yaml:"value"` // config value
+	Key   string `json:"key" yaml:"key"`     // Config key
+	Value string `json:"value" yaml:"value"` // Config value
 }
 
 // KafkaWriteMessage define the requirements to write messages into kafka
 type KafkaWriteMessage struct {
-	TopicName string `json:"name" yaml:"name"`   // topic name
-	Key       string `json:"key" yaml:"key"`     // message key
-	Value     string `json:"value" yaml:"value"` // message value
+	TopicName string `json:"name" yaml:"name"`   // Topic name
+	Key       string `json:"key" yaml:"key"`     // Message key
+	Value     string `json:"value" yaml:"value"` // Message value
 }
 
 // Schemas represent the global config to push data to elasticsearch
 type Schemas struct {
+	// Config schema
 	Schemas []ConfigSchema `json:"schemas" yaml:"schemas" binding:"required"`
 }
 
@@ -69,14 +70,26 @@ type TopicSchema struct {
 
 // SQLSchema is the requirement to query the SQL database
 type SQLSchema struct {
-	// type defined if the sql query is plain or not
+	// Type defined if the sql query is plain or not
 	Type string `json:"type" yaml:"type" binding:"required,oneof=plain"`
 	// Plain query
 	Query string `json:"query" yaml:"query"`
 }
 
-// ElasticsearchSchema is the requirement to query the SQL database
+// ElasticsearchSchema is the requirement related to elasticsearch
 type ElasticsearchSchema struct {
-	// type defined if the sql query is plain or not
+	// Elasticsearch index
+	Index ElasticsearchIndex `json:"index" yaml:"index"`
+	// Type defined if the sql query is plain or not
 	Mapping map[string]interface{} `json:"mapping" yaml:"mapping"`
+}
+
+// ElasticsearchIndex is the requirement to the elasticsearch index
+type ElasticsearchIndex struct {
+	// Create index
+	Create bool `json:"create" yaml:"create"`
+	// Index name
+	Name string `json:"name" yaml:"name"`
+	// Alias name
+	Alias string `json:"alias" yaml:"alias"`
 }
