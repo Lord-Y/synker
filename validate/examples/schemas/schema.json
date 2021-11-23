@@ -1,9 +1,9 @@
 {
   "schemas": [
     {
-      "name": "test",
+      "name": "rides",
       "topic": {
-        "name": "default.movr.public.test",
+        "name": "movr.public.rides",
         "numPartitions": 1,
         "replicationFactor": 3,
         "config": [
@@ -15,9 +15,10 @@
       },
       "sql": {
         "type": "plain",
-        "query": "SELECT * FROM test"
+        "query": "SELECT * FROM rides"
       },
       "elasticsearch": {
+        "index": "rides",
         "mapping": {
           "settings": {
             "index.requests.cache.enable": true,
@@ -51,17 +52,39 @@
               }
             ],
             "properties": {
-              "announce_id": {
+              "id": {
+                "type": "keyword"
+              },
+              "city": {
                 "normalizer": "lowerasciinormalizer",
                 "type": "keyword"
               },
-              "user_org_id": {
+              "vehicle_city": {
                 "normalizer": "lowerasciinormalizer",
                 "type": "keyword"
               },
-              "name_announce": {
+              "rider_id": {
+                "type": "keyword"
+              },
+              "vehicle_id": {
+                "type": "keyword"
+              },
+              "start_address": {
                 "normalizer": "lowerasciinormalizer",
                 "type": "keyword"
+              },
+              "end_address": {
+                "normalizer": "lowerasciinormalizer",
+                "type": "keyword"
+              },
+              "start_time": {
+                "type": "date"
+              },
+              "end_time": {
+                "type": "date"
+              },
+              "revenue": {
+                "type": "float"
               }
             }
           }
