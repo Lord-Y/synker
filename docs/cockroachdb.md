@@ -12,7 +12,7 @@ Here are the useful links:
 
 To start the instance execute this command:
 ```bash
-cockroach demo movr --geo-partitioned-replicas --insecure
+cockroach demo movr --geo-partitioned-replicas --insecure --http-port 18080
 ```
 
 In an another shell, execute `docker/cockroach_init.sh` script to enable `rangefeed setting`.
