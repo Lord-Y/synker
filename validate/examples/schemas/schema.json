@@ -18,7 +18,10 @@
         "query": "SELECT * FROM rides"
       },
       "elasticsearch": {
-        "index": "rides",
+        "index": {
+          "name": "rides",
+          "create": true
+        },
         "mapping": {
           "settings": {
             "index.requests.cache.enable": true,

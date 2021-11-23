@@ -12,7 +12,9 @@ schemas:
     type: plain
     query: SELECT * FROM promo_codes
   elasticsearch:
-    index: promo_codes
+    index:
+      name: promo_codes
+      create: true
     mapping:
       settings:
         index.requests.cache.enable: true
@@ -58,7 +60,9 @@ schemas:
     type: plain
     query: SELECT * FROM user_promo_codes
   elasticsearch:
-    index: user_promo_codes
+    index:
+      name: user_promo_codes
+      create: true
     mapping:
       settings:
         index.requests.cache.enable: true
@@ -105,7 +109,9 @@ schemas:
     type: plain
     query: SELECT * FROM users
   elasticsearch:
-    index: users
+    index:
+      name: users
+      create: true
     mapping:
       settings:
         index.requests.cache.enable: true
@@ -154,7 +160,9 @@ schemas:
     type: plain
     query: SELECT * FROM vehicle_location_histories
   elasticsearch:
-    index: vehicle_location_histories
+    index: 
+        name: vehicle_location_histories
+        create: true
     mapping:
       settings:
         index.requests.cache.enable: true
@@ -200,7 +208,10 @@ schemas:
     type: plain
     query: SELECT * FROM vehicles
   elasticsearch:
-    index: vehicles
+    index:
+      name: vehicles
+      create: true
+      alias: vehicles_alias
     mapping:
       settings:
         index.requests.cache.enable: true
@@ -243,5 +254,4 @@ schemas:
             normalizer: lowerasciinormalizer
             type: keyword
           ext:
-            normalizer: lowerasciinormalizer
             type: object
