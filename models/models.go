@@ -1,6 +1,8 @@
 // Package models assemble all structs, interface e.g ...
 package models
 
+import "time"
+
 // Configuration reference all requirements relation to the file config
 type Configuration struct {
 	// Config dir containing files to be parsed
@@ -70,10 +72,20 @@ type TopicSchema struct {
 
 // SQLSchema is the requirement to query the SQL database
 type SQLSchema struct {
-	// Type defined if the sql query is plain or not
-	Type string `json:"type" yaml:"type" binding:"required,oneof=plain"`
-	// Plain query
+	// Type defined if the sql query is simple or not
+	Type string `json:"type" yaml:"type" binding:"required,oneof=simple"`
+	// Simple query
 	Query string `json:"query" yaml:"query"`
+	// Immutable columns are used in where clause to query cockroach or elasticsearch, they can be primary keys e.g
+	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns"`
+}
+
+// ImmutableColumn bind sql column name and type
+type ImmutableColumn struct {
+	// Column name
+	Name string `json:"name" yaml:"name" binding:"required"`
+	// Column type
+	Type string `json:"type" yaml:"type" binding:"required,oneof=integer,uuid,varchar"`
 }
 
 // ElasticsearchSchema is the requirement related to elasticsearch
@@ -92,4 +104,22 @@ type ElasticsearchIndex struct {
 	Name string `json:"name" yaml:"name"`
 	// Alias name
 	Alias string `json:"alias" yaml:"alias"`
+}
+
+// ConsumeMessage permit to consume kafka messages
+type ConsumeMessage struct {
+	// Topic name returned by cockroach
+	Topic string `json:"topic"`
+	// Key returned by cockroach
+	Key string `json:"key"`
+	// Value is the mapping return by cockroach
+	Value string `json:"value"`
+	// Timestamp returned by cockroach
+	Timestamp time.Time `json:"timestamp"`
+	// Updated timestamp returned by cockroach
+	Updated time.Time `json:"updated"`
+	// Partition returned by redpanda/kafka
+	Partition int `json:"parition"`
+	// Offset returned by redpanda/kafka
+	Offset int `json:"offset"`
 }

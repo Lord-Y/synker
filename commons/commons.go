@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// BuildDSN permit to retrieve string url to connect to the sql instance
-func BuildDSN() string {
+// GetPGURI permit to retrieve string url to connect to the sql instance
+func GetPGURI() string {
 	return strings.TrimSpace(os.Getenv("SKR_PG_URI"))
 }
 
