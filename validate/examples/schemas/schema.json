@@ -14,8 +14,14 @@
         ]
       },
       "sql": {
-        "type": "plain",
-        "query": "SELECT * FROM rides"
+        "type": "simple",
+        "query": "SELECT * FROM rides",
+        "immutableColumns": [
+          {
+            "name": "id",
+            "type": "uuid"
+          }
+        ]
       },
       "elasticsearch": {
         "index": {
