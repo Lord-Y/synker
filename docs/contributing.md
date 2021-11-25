@@ -30,9 +30,7 @@ sudo docker-compose -f docker/docker-compose-cluster.yaml up -d
 ```bash
 export SKR_PG_URI="postgres://root:@127.0.0.1:26257/synker"
 export SKR_ELASTICSEARCH_URI="http://127.0.0.1:9200"
-export SKR_KAFKA_URI="localhost:2379,localhost:22379,localhost:32379"
-export SKR_KAFKA_USER=synker
-export SKR_KAFKA_PASSWORD=synker
+export SKR_KAFKA_URI="localhost:9092"
 ```
 
 ## Golang test
