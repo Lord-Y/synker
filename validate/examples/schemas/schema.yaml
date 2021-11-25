@@ -9,8 +9,11 @@ schemas:
     - key: max.message.bytes
       value: "128000"
   sql:
-    type: plain
+    type: simple
     query: SELECT * FROM promo_codes
+    immutableColumns:
+    - name: code
+      type: varchar
   elasticsearch:
     index:
       name: promo_codes
@@ -46,8 +49,7 @@ schemas:
           creation_time:
             type: date
           rules:
-            normalizer: lowerasciinormalizer
-            type: keyword
+            type: object
 - name: user_promo_codes
   topic:
     name: movr.public.user_promo_codes
@@ -57,8 +59,11 @@ schemas:
     - key: max.message.bytes
       value: "128000"
   sql:
-    type: plain
+    type: simple
     query: SELECT * FROM user_promo_codes
+    immutableColumns:
+    - name: user_id
+      type: uuid
   elasticsearch:
     index:
       name: user_promo_codes
@@ -106,8 +111,11 @@ schemas:
     - key: max.message.bytes
       value: "128000"
   sql:
-    type: plain
+    type: simple
     query: SELECT * FROM users
+    immutableColumns:
+    - name: id
+      type: uuid
   elasticsearch:
     index:
       name: users
@@ -157,8 +165,11 @@ schemas:
     - key: max.message.bytes
       value: "128000"
   sql:
-    type: plain
+    type: simple
     query: SELECT * FROM vehicle_location_histories
+    immutableColumns:
+    - name: ride_id
+      type: uuid
   elasticsearch:
     index: 
         name: vehicle_location_histories
@@ -205,8 +216,11 @@ schemas:
     - key: max.message.bytes
       value: "128000"
   sql:
-    type: plain
+    type: simple
     query: SELECT * FROM vehicles
+    immutableColumns:
+    - name: id
+      type: uuid
   elasticsearch:
     index:
       name: vehicles
