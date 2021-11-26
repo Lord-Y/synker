@@ -138,7 +138,7 @@ func TestDeleteIndex(t *testing.T) {
 	client, err := Client()
 	assert.Nil(err)
 
-	b, err := deleteIndex(client, "twitter")
+	b, err := DeleteIndex(client, "twitter")
 	assert.Nil(err)
 	assert.Equal(true, b)
 }
