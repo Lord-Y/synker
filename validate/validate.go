@@ -19,6 +19,7 @@ import (
 	"github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tools"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/olivere/elastic/v7"
@@ -36,6 +37,7 @@ var (
 		".yaml",
 		".yml",
 	}
+	validate *validator.Validate
 )
 
 func init() {
@@ -92,6 +94,8 @@ func loadFiles(f string) (z []byte, err error) {
 
 // parsing permit to validate all provided config
 func (c *Validate) parsing() (file string, err error) {
+	validate = validator.New()
+
 	for _, file = range c.Files {
 		fBytes, err := loadFiles(file)
 		if err != nil {
@@ -103,10 +107,20 @@ func (c *Validate) parsing() (file string, err error) {
 			if err != nil {
 				return file, err
 			}
+			err = validate.Struct(z)
+			if err != nil {
+				return file, err
+			}
 		}
 		if tools.IsJSONFromBytes(fBytes) {
 			err = json.Unmarshal(fBytes, &z)
 			if err != nil {
+				return file, err
+			}
+			err = validate.Struct(z)
+			if err != nil {
+				validationErrors := err.(validator.ValidationErrors)
+				log.Info().Msgf("validation errors %+v", validationErrors)
 				return file, err
 			}
 		}

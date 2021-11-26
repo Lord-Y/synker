@@ -18,19 +18,19 @@ type Configuration struct {
 // CreateTopic reference all the possible requirements to create a topic
 type CreateTopic struct {
 	// Topic name
-	Name string `json:"name" yaml:"name"`
+	Name string `json:"name" yaml:"name" validate:"required"`
 	// Number of partitions
-	NumPartitions int `json:"numPartitions" yaml:"numPartitions"`
+	NumPartitions int `json:"numPartitions" yaml:"numPartitions" validate:"required"`
 	// Cluster replication factor
-	ReplicationFactor int `json:"replicationFactor" yaml:"replicationFactor"`
+	ReplicationFactor int `json:"replicationFactor" yaml:"replicationFactor" validate:"required"`
 	// Topic config
 	TopicConfig []TopicConfig
 }
 
 // TopicConfig store key/value pair use to configure the topic
 type TopicConfig struct {
-	Key   string `json:"key" yaml:"key"`     // Config key
-	Value string `json:"value" yaml:"value"` // Config value
+	Key   string `json:"key" yaml:"key" validate:"required"`     // Config key
+	Value string `json:"value" yaml:"value" validate:"required"` // Config value
 }
 
 // KafkaWriteMessage define the requirements to write messages into kafka
@@ -43,57 +43,57 @@ type KafkaWriteMessage struct {
 // Schemas represent the global config to push data to elasticsearch
 type Schemas struct {
 	// Config schema
-	Schemas []ConfigSchema `json:"schemas" yaml:"schemas" binding:"required"`
+	Schemas []ConfigSchema `json:"schemas" yaml:"schemas" validate:"required,dive"`
 }
 
 // ConfigSchema is the validator
 type ConfigSchema struct {
 	// Schema name
-	Name string `json:"name" yaml:"name" binding:"required"`
+	Name string `json:"name" yaml:"name" validate:"required"`
 	// Topic schema
-	Topic TopicSchema `json:"topic" yaml:"topic"`
+	Topic TopicSchema `json:"topic" yaml:"topic" validate:"required,dive"`
 	// SQL schema
-	SQL SQLSchema `json:"sql" yaml:"sql"`
+	SQL SQLSchema `json:"sql" yaml:"sql" validate:"required,dive"`
 	// Elasticsearch configuration
-	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch"`
+	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch" validate:"required,dive"`
 }
 
 // TopicSchema is the requirement to create the topic
 type TopicSchema struct {
 	// Topic name
-	Name string `json:"name" yaml:"name" binding:"required"`
+	Name string `json:"name" yaml:"name" validate:"required"`
 	// Number of partitions
-	NumPartitions int `json:"numPartitions" yaml:"numPartitions"`
+	NumPartitions int `json:"numPartitions" yaml:"numPartitions" validate:"required"`
 	// Cluster replication factor
-	ReplicationFactor int `json:"replicationFactor" yaml:"replicationFactor"`
+	ReplicationFactor int `json:"replicationFactor" yaml:"replicationFactor" validate:"required"`
 	// Topic config
-	TopicConfig []TopicConfig `json:"config" yaml:"config"`
+	TopicConfig []TopicConfig `json:"config" yaml:"config" validate:"dive"`
 }
 
 // SQLSchema is the requirement to query the SQL database
 type SQLSchema struct {
 	// Type defined if the sql query is simple or not
-	Type string `json:"type" yaml:"type" binding:"required,oneof=simple"`
+	Type string `json:"type" yaml:"type" validate:"required,oneof=simple"`
 	// Simple query
-	Query string `json:"query" yaml:"query"`
+	Query string `json:"query" yaml:"query" validate:"required"`
 	// Immutable columns are used in where clause to query cockroach or elasticsearch, they can be primary keys e.g
-	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns"`
+	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns" validate:"required,dive"`
 }
 
 // ImmutableColumn bind sql column name and type
 type ImmutableColumn struct {
 	// Column name
-	Name string `json:"name" yaml:"name" binding:"required"`
+	Name string `json:"name" yaml:"name" validate:"required"`
 	// Column type
-	Type string `json:"type" yaml:"type" binding:"required,oneof=integer,uuid,varchar"`
+	Type string `json:"type" yaml:"type" validate:"required,oneof=integer uuid varchar"`
 }
 
 // ElasticsearchSchema is the requirement related to elasticsearch
 type ElasticsearchSchema struct {
 	// Elasticsearch index
-	Index ElasticsearchIndex `json:"index" yaml:"index"`
+	Index ElasticsearchIndex `json:"index" yaml:"index" validate:"required"`
 	// Type defined if the sql query is plain or not
-	Mapping map[string]interface{} `json:"mapping" yaml:"mapping"`
+	Mapping map[string]interface{} `json:"mapping" yaml:"mapping" validate:"required"`
 }
 
 // ElasticsearchIndex is the requirement to the elasticsearch index
@@ -101,7 +101,7 @@ type ElasticsearchIndex struct {
 	// Create index
 	Create bool `json:"create" yaml:"create"`
 	// Index name
-	Name string `json:"name" yaml:"name"`
+	Name string `json:"name" yaml:"name" validate:"required"`
 	// Alias name
 	Alias string `json:"alias" yaml:"alias"`
 }
