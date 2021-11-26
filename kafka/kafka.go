@@ -244,6 +244,6 @@ func consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (e
 	if err != nil {
 		return
 	}
-	log.Info().Msgf("Message at offset %d: %s = %s", m.Offset, string(m.Key), string(m.Value))
+	log.Debug().Msgf("Message at offset %d: %s = %s", m.Offset, string(m.Key), string(m.Value))
 	return
 }
