@@ -119,8 +119,6 @@ func (c *Validate) parsing() (file string, err error) {
 			}
 			err = validate.Struct(z)
 			if err != nil {
-				validationErrors := err.(validator.ValidationErrors)
-				log.Info().Msgf("validation errors %+v", validationErrors)
 				return file, err
 			}
 		}
@@ -154,8 +152,8 @@ func (c *Validate) ManageTopics() (err error) {
 				ct,
 				models.CreateTopic{
 					Name:              v.Topic.Name,
-					NumPartitions:     1,
-					ReplicationFactor: 3,
+					NumPartitions:     v.Topic.NumPartitions,
+					ReplicationFactor: v.Topic.ReplicationFactor,
 				},
 			)
 			if err != nil {
