@@ -4,8 +4,13 @@ package validate
 import (
 	"os"
 	"os/exec"
+	"os/signal"
 	"testing"
+	"time"
 
+	"github.com/Lord-Y/synker/elasticsearch"
+	"github.com/Lord-Y/synker/kafka"
+	"github.com/Lord-Y/synker/tools"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -117,4 +122,198 @@ func TestValidate_fail_falseconfig(t *testing.T) {
 		return
 	}
 	assert.Error(err)
+}
+
+func TestManageTopicsAndElasticsearchIndex(t *testing.T) {
+	assert := assert.New(t)
+
+	conn, err := kafka.Client()
+	assert.Nil(err)
+	topics, err := kafka.ListTopics(conn)
+	assert.Nil(err)
+	if tools.InSlice("movr.public.user_promo_codes", topics) {
+		conndel, err := kafka.Client()
+		assert.Nil(err)
+		err = kafka.DeleteTopics(
+			conndel,
+			[]string{
+				"movr.public.user_promo_codes",
+			},
+		)
+		assert.Nil(err)
+		client, err := elasticsearch.Client()
+		assert.Nil(err)
+
+		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		assert.Nil(err)
+		assert.Equal(true, b)
+	}
+
+	var c Validate
+	c.ConfigDir = "examples/schemas"
+	c.Run()
+
+	err = c.ManageTopics()
+	assert.Nil(err)
+	err = c.ManageElasticsearchIndex()
+	assert.Nil(err)
+}
+
+func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
+	assert := assert.New(t)
+
+	conn, err := kafka.Client()
+	assert.Nil(err)
+	topics, err := kafka.ListTopics(conn)
+	assert.Nil(err)
+	if tools.InSlice("movr.public.user_promo_codes", topics) {
+		conndel, err := kafka.Client()
+		assert.Nil(err)
+		err = kafka.DeleteTopics(
+			conndel,
+			[]string{
+				"movr.public.user_promo_codes",
+			},
+		)
+		assert.Nil(err)
+		client, err := elasticsearch.Client()
+		assert.Nil(err)
+
+		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		assert.Nil(err)
+		assert.Equal(true, b)
+	}
+
+	var c Validate
+	c.ConfigDir = "examples/schemas"
+	c.Run()
+
+	err = c.ManageTopics()
+	assert.Nil(err)
+
+	var schema_id int
+	for k := range c.ValidatedSchemas.Schemas {
+		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+			schema_id = k
+			break
+		}
+	}
+	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes_alias"
+	err = c.ManageElasticsearchIndex()
+	assert.Nil(err)
+}
+
+func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
+	assert := assert.New(t)
+
+	conn, err := kafka.Client()
+	assert.Nil(err)
+	topics, err := kafka.ListTopics(conn)
+	assert.Nil(err)
+	if tools.InSlice("movr.public.user_promo_codes", topics) {
+		conndel, err := kafka.Client()
+		assert.Nil(err)
+		err = kafka.DeleteTopics(
+			conndel,
+			[]string{
+				"movr.public.user_promo_codes",
+			},
+		)
+		assert.Nil(err)
+		client, err := elasticsearch.Client()
+		assert.Nil(err)
+
+		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		assert.Nil(err)
+		assert.Equal(true, b)
+	}
+
+	var c Validate
+	c.ConfigDir = "examples/schemas"
+	c.Run()
+
+	err = c.ManageTopics()
+	assert.Nil(err)
+
+	var schema_id int
+	for k := range c.ValidatedSchemas.Schemas {
+		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+			schema_id = k
+			break
+		}
+	}
+	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
+	err = c.ManageElasticsearchIndex()
+	assert.Error(err)
+}
+
+func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_created(t *testing.T) {
+	assert := assert.New(t)
+
+	conn, err := kafka.Client()
+	assert.Nil(err)
+	topics, err := kafka.ListTopics(conn)
+	assert.Nil(err)
+	if tools.InSlice("movr.public.user_promo_codes", topics) {
+		conndel, err := kafka.Client()
+		assert.Nil(err)
+		err = kafka.DeleteTopics(
+			conndel,
+			[]string{
+				"movr.public.user_promo_codes",
+			},
+		)
+		assert.Nil(err)
+		client, err := elasticsearch.Client()
+		assert.Nil(err)
+
+		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		assert.Nil(err)
+		assert.Equal(true, b)
+	}
+
+	var c Validate
+	c.ConfigDir = "examples/schemas"
+	c.Run()
+
+	err = c.ManageTopics()
+	assert.Nil(err)
+
+	var schema_id int
+	for k := range c.ValidatedSchemas.Schemas {
+		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+			schema_id = k
+			break
+		}
+	}
+	err = c.ManageElasticsearchIndex()
+	assert.Nil(err)
+	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
+	err = c.ManageElasticsearchIndex()
+	assert.Error(err)
+}
+
+func TestValidate_processing(t *testing.T) {
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt)
+
+	go func() {
+		<-sigc
+		var c Validate
+		c.ConfigDir = "examples/schemas"
+		c.Run()
+		c.Processing()
+		signal.Stop(sigc)
+	}()
+
+	err = proc.Signal(os.Interrupt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1 * time.Second)
 }
