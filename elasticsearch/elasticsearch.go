@@ -83,8 +83,8 @@ func createIndex(client *elastic.Client, index string, mapping string) (b bool, 
 	return true, nil
 }
 
-// deleteIndex permit to dleete elasticsearch index provided
-func deleteIndex(client *elastic.Client, index string) (b bool, err error) {
+// DeleteIndex permit to delete elasticsearch index provided
+func DeleteIndex(client *elastic.Client, index string) (b bool, err error) {
 	defer client.Stop()
 	ctx := context.Background()
 
