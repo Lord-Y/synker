@@ -170,6 +170,8 @@ schemas:
     immutableColumns:
     - name: ride_id
       type: uuid
+    - name: timestamp
+      type: date
   elasticsearch:
     index: 
         name: vehicle_location_histories
@@ -221,6 +223,10 @@ schemas:
     immutableColumns:
     - name: id
       type: uuid
+    - name: creation_time
+      type: date
+    - name: current_location
+      type: varchar
   elasticsearch:
     index:
       name: vehicles

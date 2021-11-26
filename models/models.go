@@ -85,7 +85,7 @@ type ImmutableColumn struct {
 	// Column name
 	Name string `json:"name" yaml:"name" validate:"required"`
 	// Column type
-	Type string `json:"type" yaml:"type" validate:"required,oneof=integer uuid varchar"`
+	Type string `json:"type" yaml:"type" validate:"required,oneof=integer uuid varchar date"`
 }
 
 // ElasticsearchSchema is the requirement related to elasticsearch
