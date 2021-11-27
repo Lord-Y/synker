@@ -62,6 +62,18 @@ func Client() (client *elastic.Client, err error) {
 	return
 }
 
+// IndexAlreadyExist permit to check if elasticsearch index already exist
+func IndexAlreadyExist(client *elastic.Client, index string) (b bool, err error) {
+	defer client.Stop()
+
+	ctx := context.Background()
+	b, err = client.IndexExists(index).Do(ctx)
+	if err != nil {
+		return
+	}
+	return
+}
+
 // createIndex permit to create elasticsearch index with mapping provided
 func createIndex(client *elastic.Client, index string, mapping string) (b bool, err error) {
 	defer client.Stop()
