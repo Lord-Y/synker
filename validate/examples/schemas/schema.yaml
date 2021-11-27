@@ -223,10 +223,6 @@ schemas:
     immutableColumns:
     - name: id
       type: uuid
-    - name: creation_time
-      type: date
-    - name: current_location
-      type: varchar
   elasticsearch:
     index:
       name: vehicles

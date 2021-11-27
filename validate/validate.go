@@ -245,7 +245,7 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 	return
 }
 
-// Consume permit to consume messages in kafka and sent it to elasticsearch
+// Processing permit to start processing kafka messages and sent it to elasticsearch
 func (c *Validate) Processing() {
 	wg := sync.WaitGroup{}
 
@@ -266,7 +266,6 @@ func (c *Validate) Processing() {
 func (c *Validate) consume(index int, topic string) {
 	conn, err := kafka.Client()
 	if err != nil {
-		log.Error().Err(err).Msg("Fail to establish connection to kafka")
 		return
 	}
 	defer conn.Close()
@@ -298,6 +297,9 @@ func (c *Validate) consume(index int, topic string) {
 			break
 		}
 		log.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		if topic == "users" {
+			log.Info().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		}
 
 		mjson, err := json.Marshal(m)
 		if err != nil {
@@ -322,7 +324,7 @@ func (c *Validate) consume(index int, topic string) {
 		if value["after"] != nil {
 			exist, id, err := c.SearchByVersion(index, value)
 			if err != nil {
-				log.Error().Err(err).Msgf("Fail to check if message already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 				return
 			}
 			log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
@@ -343,12 +345,12 @@ func (c *Validate) consume(index int, topic string) {
 			}
 		}
 		if indexed {
-			log.Info().Msgf("Kafka message has been indexed in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			log.Debug().Msgf("Kafka message has been indexed in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			if err := r.CommitMessages(ctx, m); err != nil {
 				log.Error().Err(err).Msgf("Fail to commit kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 				return
 			}
-			log.Info().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+			log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
 		}
 	}
 }
@@ -376,11 +378,10 @@ func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b b
 	if err != nil {
 		return
 	}
-	data, err := json.MarshalIndent(src, "", "  ")
+	data, err := json.Marshal(src)
 	if err != nil {
 		return
 	}
-	log.Debug().Msgf("Elasticsearch search query %s", string(data))
 
 	es_alias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
 	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
@@ -402,7 +403,8 @@ func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b b
 	}
 	if result.TotalHits() > 0 {
 		if len(result.Hits.Hits) > 1 {
-			return false, "", fmt.Errorf("Multiple document found")
+			log.Info().Msgf("Elasticsearch search query on index %s %s", es_target_index, string(data))
+			return false, "", fmt.Errorf("Multiple document found with same data")
 		}
 		for _, hit := range result.Hits.Hits {
 			id = hit.Id
