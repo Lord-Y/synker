@@ -358,7 +358,24 @@ func (c *Validate) consume(index int, topic string) {
 func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b bool, id string, err error) {
 	var es_target_index string
 	client, err := elasticsearch.Client()
+	if err != nil {
+		return
+	}
 	defer client.Stop()
+	ctx := context.Background()
+	es_alias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+
+	if es_alias != "" {
+		es_target_index = es_alias
+	} else {
+		es_target_index = es_index
+	}
+
+	_, err = client.Refresh().Index(es_target_index).Do(ctx)
+	if err != nil {
+		return
+	}
 
 	esQuery := elastic.NewBoolQuery()
 	for _, v := range c.ValidatedSchemas.Schemas[index].SQL.ImmutableColumns {
@@ -383,16 +400,6 @@ func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b b
 		return
 	}
 
-	es_alias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
-
-	if es_alias != "" {
-		es_target_index = es_alias
-	} else {
-		es_target_index = es_index
-	}
-
-	ctx := context.Background()
 	result, err := client.Search().
 		Index(es_target_index).
 		Query(esQuery).
