@@ -28,7 +28,8 @@ sudo docker-compose -f docker/docker-compose-cluster.yaml up -d
 ## Set default variables
 
 ```bash
-export SKR_PG_URI="postgres://root:@127.0.0.1:26257/synker"
+export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}')
+export SKR_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SKR_ELASTICSEARCH_URI="http://127.0.0.1:9200"
 export SKR_KAFKA_URI="localhost:9092"
 ```
@@ -44,4 +45,12 @@ go tool cover -html=coverage.out
 
 # Get coverage result in CLI
 go tool cover -func=coverage.out
+```
+
+## Redpanda cleaning
+
+```bash
+sudo docker stop redpandac01 redpandac02 redpandac03
+sudo docker rm redpandac01 redpandac02 redpandac03
+sudo docker volume rm -f docker_redpandac01 docker_redpandac02 docker_redpandac03
 ```
