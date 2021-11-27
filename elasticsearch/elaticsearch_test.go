@@ -132,6 +132,17 @@ func TestCreateIndex_fail(t *testing.T) {
 	assert.Equal(true, b)
 }
 
+func TestIndexAlreadyExist(t *testing.T) {
+	assert := assert.New(t)
+
+	client, err := Client()
+	assert.Nil(err)
+
+	b, err := IndexAlreadyExist(client, "twitter")
+	assert.Nil(err)
+	assert.Equal(true, b)
+}
+
 func TestDeleteIndex(t *testing.T) {
 	assert := assert.New(t)
 
