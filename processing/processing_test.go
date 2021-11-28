@@ -1,5 +1,5 @@
-// Package validate permit to validate files provided
-package validate
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"context"

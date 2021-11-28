@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/Lord-Y/synker/api"
-	"github.com/Lord-Y/synker/validate"
+	"github.com/Lord-Y/synker/processing"
 )
 
 // List of vars that will be used by Synker
@@ -11,6 +11,6 @@ var (
 	buildDate   string
 	goVersion   string
 	Version     = "0.0.1-dev"
-	cmdValidate validate.Validate
+	cmdValidate processing.Validate
 	cmdAPI      api.API
 )
