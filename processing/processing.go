@@ -60,7 +60,7 @@ func (c *Validate) Run() {
 		},
 	)
 	if err != nil {
-		log.Error().Err(err).Msgf("Fail to walk into directory %s", c.ConfigDir)
+		log.Fatal().Err(err).Msgf("Fail to walk into directory %s", c.ConfigDir)
 		return
 	}
 	if len(files) == 0 {
