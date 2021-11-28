@@ -105,7 +105,7 @@ func TestValidate(t *testing.T) {
 				"synker",
 				"validate",
 				"-c",
-				"validate/examples/schemas",
+				"processing/examples/schemas",
 			},
 			fail: false,
 		},
