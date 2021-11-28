@@ -230,12 +230,11 @@ func consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (e
 	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   brokers,
-		Topic:     topicName,
-		GroupID:   consumerGroup,
-		Partition: 0,
-		MinBytes:  1,
-		MaxBytes:  10e6,
+		Brokers:  brokers,
+		Topic:    topicName,
+		GroupID:  consumerGroup,
+		MinBytes: 1,
+		MaxBytes: 10e6,
 	})
 	defer r.Close()
 

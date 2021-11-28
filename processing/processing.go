@@ -273,14 +273,12 @@ func (c *Validate) consume(index int, topic string) {
 		conn.Broker().Host,
 		strconv.Itoa(conn.Broker().Port),
 	}
-	uuid := uuid.New()
 	r := kafkago.NewReader(kafkago.ReaderConfig{
-		Brokers:   brokers,
-		Topic:     topic,
-		GroupID:   uuid.String(),
-		Partition: 0,
-		MinBytes:  1,
-		MaxBytes:  10e6,
+		Brokers:  brokers,
+		Topic:    topic,
+		GroupID:  fmt.Sprintf("synker_%s", strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Name)),
+		MinBytes: 1,
+		MaxBytes: 10e6,
 	})
 	defer r.Close()
 
