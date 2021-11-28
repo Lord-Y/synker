@@ -14,7 +14,7 @@ import (
 	"github.com/Lord-Y/synker/api/routers"
 	apiLogger "github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/models"
-	"github.com/Lord-Y/synker/validate"
+	"github.com/Lord-Y/synker/processing"
 	"github.com/rs/zerolog/log"
 )
 
@@ -42,7 +42,7 @@ func init() {
 }
 
 // Run will start the api server
-func (c *API) Run(validated *validate.Validate) {
+func (c *API) Run(validated *processing.Validate) {
 	var srv *http.Server
 	router := routers.SetupRouter()
 
