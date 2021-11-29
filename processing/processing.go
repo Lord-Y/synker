@@ -245,6 +245,23 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 	return
 }
 
+// ManageChangeFeed permit check and create required changefeed
+func (c *Validate) ManageChangeFeed() (err error) {
+	for _, v := range c.ValidatedSchemas.Schemas {
+		count, err := countChangeFeed(v.ChangeFeed.FullTableName, "running")
+		if err != nil {
+			log.Fatal().Err(err).Msgf("Fail to check if required changefeed %s on schema %s has status running", v.ChangeFeed.FullTableName, v.Name)
+		}
+		if count == 0 {
+			err = createChangeFeed(v.ChangeFeed)
+			if err != nil {
+				log.Fatal().Err(err).Msgf("Fail to create changefeed %s on schema %s", v.ChangeFeed.FullTableName, v.Name)
+			}
+		}
+	}
+	return
+}
+
 // Processing permit to start processing kafka messages and sent it to elasticsearch
 func (c *Validate) Processing() {
 	wg := sync.WaitGroup{}
@@ -295,10 +312,6 @@ func (c *Validate) consume(index int, topic string) {
 			break
 		}
 		log.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-		if topic == "users" {
-			log.Info().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-		}
-
 		mjson, err := json.Marshal(m)
 		if err != nil {
 			log.Error().Err(err).Msgf("Fail to marshall kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)

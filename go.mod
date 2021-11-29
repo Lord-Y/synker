@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.14.0
 	github.com/magefile/mage v1.11.0
 	github.com/mcuadros/go-gin-prometheus v0.1.0

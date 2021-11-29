@@ -59,6 +59,11 @@ func (c *API) Run(validated *processing.Validate) {
 		log.Fatal().Err(err).Msg("Fail to manage elasticsearch indexes")
 		return
 	}
+	err = validated.ManageChangeFeed()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Fail to manage changefeed")
+		return
+	}
 
 	appPort := strings.TrimSpace(os.Getenv("SKR_API_PORT"))
 	if appPort != "" {

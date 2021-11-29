@@ -56,6 +56,8 @@ type ConfigSchema struct {
 	SQL SQLSchema `json:"sql" yaml:"sql" validate:"required,dive"`
 	// Elasticsearch configuration
 	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch" validate:"required,dive"`
+	// Requirements to create change feed
+	ChangeFeed ChangeFeed `json:"changeFeed" yaml:"changeFeed" validate:"required,dive"`
 }
 
 // TopicSchema is the requirement to create the topic
@@ -78,6 +80,14 @@ type SQLSchema struct {
 	Query string `json:"query" yaml:"query" validate:"required"`
 	// Immutable columns are used in where clause to query cockroach or elasticsearch, they can be primary keys e.g
 	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns" validate:"required,dive"`
+}
+
+// ChangeFeed bind all requrirements to create changefeed
+type ChangeFeed struct {
+	// Cockroach full table name like movr.public.promo_codes
+	FullTableName string `json:"fullTableName" yaml:"fullTableName" validate:"required"`
+	// Column type
+	Options []string `json:"options" yaml:"options" validate:"required"`
 }
 
 // ImmutableColumn bind sql column name and type
