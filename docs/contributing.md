@@ -11,7 +11,7 @@ Then, enable the hook in our project:
 git config core.hooksPath .githooks
 ```
 
-## Starting the cluster
+## Start the clusters
 
 Set `sysctl` values permanently for elasticsearch if not already done in your user environment:
 ```bash
@@ -20,9 +20,16 @@ vm.max_map_count=262144
 EOF
 sudo sysctl -p /etc/sysctl.d/10-custom.conf
 ```
-Start the cluster:
+Start the clusters:
 ```bash
 sudo docker-compose -f docker/docker-compose-cluster.yaml up -d
+```
+
+## Start CockroachDB cluster
+
+To start the cluster execute this command:
+```bash
+cockroach demo movr --geo-partitioned-replicas --insecure --http-port 18080
 ```
 
 ## Set default variables
@@ -32,6 +39,18 @@ export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}'
 export SKR_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SKR_ELASTICSEARCH_URI="http://127.0.0.1:9200"
 export SKR_KAFKA_URI="localhost:9092"
+```
+
+## Set CockroachDB cluster settings
+
+```bash
+docker/cockroach_init.sh
+```
+
+## Start the api
+
+```bash
+go run main.go api -c processing/examples/schemas/
 ```
 
 ## Golang test
