@@ -13,6 +13,15 @@
           }
         ]
       },
+      "changeFeed": {
+        "fullTableName": "movr.public.rides",
+        "options": [
+          "full_table_name",
+          "on_error = 'pause'",
+          "protect_data_from_gc_on_pause",
+          "updated"
+        ]
+      },
       "sql": {
         "type": "simple",
         "query": "SELECT * FROM rides",

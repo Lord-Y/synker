@@ -8,6 +8,13 @@ schemas:
     config:
     - key: max.message.bytes
       value: "128000"
+  changeFeed:
+    fullTableName: movr.public.promo_codes
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
   sql:
     type: simple
     query: SELECT * FROM promo_codes
@@ -58,6 +65,13 @@ schemas:
     config:
     - key: max.message.bytes
       value: "128000"
+  changeFeed:
+    fullTableName: movr.public.user_promo_codes
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
   sql:
     type: simple
     query: SELECT * FROM user_promo_codes
@@ -110,6 +124,13 @@ schemas:
     config:
     - key: max.message.bytes
       value: "128000"
+  changeFeed:
+    fullTableName: movr.public.users
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
   sql:
     type: simple
     query: SELECT * FROM users
@@ -164,6 +185,13 @@ schemas:
     config:
     - key: max.message.bytes
       value: "128000"
+  changeFeed:
+    fullTableName: movr.public.vehicle_location_histories
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
   sql:
     type: simple
     query: SELECT * FROM vehicle_location_histories
@@ -217,6 +245,13 @@ schemas:
     config:
     - key: max.message.bytes
       value: "128000"
+  changeFeed:
+    fullTableName: movr.public.vehicles
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
   sql:
     type: simple
     query: SELECT * FROM vehicles

@@ -7,6 +7,7 @@ Cockroach version 21.2.0 minimum is required if you want to use `full_table_name
 Here are the useful links:
 - [cockroach demo](https://www.cockroachlabs.com/docs/v21.2/simulate-a-multi-region-cluster-on-localhost.html)
 - [changefeed enterprise feature](https://www.cockroachlabs.com/docs/stable/stream-data-out-of-cockroachdb-using-changefeeds.html#configure-a-changefeed-enterprise)
+- [CDC - Fine Tuning Changefeeds for Performance and Durability](https://www.cockroachlabs.com/blog/change-data-capture-for-performance-durability/)
 
 ## Start the instance
 
