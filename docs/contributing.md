@@ -22,18 +22,19 @@ sudo sysctl -p /etc/sysctl.d/10-custom.conf
 ```
 Start the clusters:
 ```bash
-sudo docker-compose -f docker/docker-compose-cluster.yaml up -d
+sudo docker-compose -f docker/docker-compose.yaml up -d
 ```
 
 ## Start CockroachDB cluster
 
-To start the cluster execute this command:
+To start the cluster execute this command in a separate terminal:
 ```bash
 cockroach demo movr --geo-partitioned-replicas --insecure --http-port 18080
 ```
 
 ## Set default variables
 
+In the terminal you will execute your `go run`: 
 ```bash
 export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}')
 export SKR_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
@@ -64,6 +65,18 @@ go tool cover -html=coverage.out
 
 # Get coverage result in CLI
 go tool cover -func=coverage.out
+```
+
+## Repanda/elasticsearch watching
+
+Watching what's in the queue `promo_codes`:
+```bash
+rpk topic consume movr.public.promo_codes
+```
+
+Watching what's in `elasticsearch`:
+```bash
+curl -s "${SKR_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ```
 
 ## Redpanda cleaning
