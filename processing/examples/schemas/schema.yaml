@@ -16,11 +16,11 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    type: simple
-    query: SELECT * FROM promo_codes
-    immutableColumns:
-    - name: code
-      type: varchar
+    queryType:
+      none:
+        immutableColumns:
+        - name: code
+          type: varchar
   elasticsearch:
     index:
       name: promo_codes
@@ -73,11 +73,11 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    type: simple
-    query: SELECT * FROM user_promo_codes
-    immutableColumns:
-    - name: user_id
-      type: uuid
+    queryType:
+      none:
+        immutableColumns:
+        - name: user_id
+          type: uuid
   elasticsearch:
     index:
       name: user_promo_codes
@@ -132,11 +132,11 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    type: simple
-    query: SELECT * FROM users
-    immutableColumns:
-    - name: id
-      type: uuid
+    queryType:
+      none:
+        immutableColumns:
+        - name: code
+          type: varchar
   elasticsearch:
     index:
       name: users
@@ -193,15 +193,15 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    type: simple
-    query: SELECT * FROM vehicle_location_histories
-    immutableColumns:
-    - name: ride_id
-      type: uuid
-    - name: timestamp
-      type: date
+    queryType:
+      none:
+        immutableColumns:
+        - name: ride_id
+          type: uuid
+        - name: timestamp
+          type: date
   elasticsearch:
-    index: 
+    index:
         name: vehicle_location_histories
         create: true
     mapping:
@@ -253,11 +253,11 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    type: simple
-    query: SELECT * FROM vehicles
-    immutableColumns:
-    - name: id
-      type: uuid
+    queryType:
+      none:
+        immutableColumns:
+        - name: id
+          type: uuid
   elasticsearch:
     index:
       name: vehicles
@@ -306,3 +306,78 @@ schemas:
             type: keyword
           ext:
             type: object
+- name: rides
+  topic:
+    name: movr.public.rides
+    numPartitions: 1
+    replicationFactor: 3
+    config:
+    - key: max.message.bytes
+      value: "128000"
+  changeFeed:
+    fullTableName: movr.public.rides
+    options:
+    - full_table_name
+    - on_error = 'pause'
+    - protect_data_from_gc_on_pause
+    - updated
+  sql:
+    queryType:
+      advanced:
+        immutableColumns:
+        - name: id
+          type: uuid
+        query: "SELECT rides.id,rides.city,rides.vehicle_city,rides.rider_id,rides.vehicle_id,rides.start_address,rides.end_address,rides.start_time,rides.end_time,rides.revenue,vehicles.type FROM rides LEFT JOIN vehicles ON vehicles.id = rides.vehicle_id"
+  elasticsearch:
+    index:
+      name: rides
+      create: true
+    mapping:
+      settings:
+        index.requests.cache.enable: true
+        index:
+          number_of_shards: 3
+          number_of_replicas: 2
+        analysis:
+          normalizer:
+            lowerasciinormalizer:
+              type: custom
+              filter:
+              - lowercase
+              - asciifolding
+      mappings:
+        dynamic_templates:
+        - string_as_keyword:
+            match_mapping_type: string
+            match: '*'
+            mapping:
+              type: keyword
+              normalizer: lowerasciinormalizer
+        properties:
+          id:
+            type: keyword
+          city:
+            normalizer: lowerasciinormalizer
+            type: keyword
+          vehicle_city:
+            normalizer: lowerasciinormalizer
+            type: keyword
+          rider_id:
+            type: keyword
+          vehicle_id:
+            type: keyword
+          start_address:
+            normalizer: lowerasciinormalizer
+            type: keyword
+          end_address:
+            normalizer: lowerasciinormalizer
+            type: keyword
+          start_time:
+            type: date
+          end_time:
+            type: date
+          revenue:
+            type: float
+          type:
+            normalizer: lowerasciinormalizer
+            type: keyword
