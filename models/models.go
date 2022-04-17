@@ -10,9 +10,15 @@ type Configuration struct {
 	// List of files returned after walking into specified directory
 	Files []string
 	// List of validated files
-	ValidatedFiles []string
+	ValidatedFiles []ValidatedFiles
 	// List of validated schemas
 	ValidatedSchemas Schemas
+}
+
+// List of validated files with SQL queries
+type ValidatedFiles struct {
+	File    string
+	Queries []string
 }
 
 // CreateTopic reference all the possible requirements to create a topic
@@ -58,6 +64,8 @@ type ConfigSchema struct {
 	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch" validate:"required,dive"`
 	// Requirements to create change feed
 	ChangeFeed ChangeFeed `json:"changeFeed" yaml:"changeFeed" validate:"required,dive"`
+	// SQLQuery hold the validated query perform when query type is advanced
+	SQLQuery string
 }
 
 // TopicSchema is the requirement to create the topic
@@ -74,12 +82,10 @@ type TopicSchema struct {
 
 // SQLSchema is the requirement to query the SQL database
 type SQLSchema struct {
-	// Type defined if the sql query is simple or not
-	Type string `json:"type" yaml:"type" validate:"required,oneof=simple"`
-	// Simple query
-	Query string `json:"query" yaml:"query" validate:"required"`
-	// Immutable columns are used in where clause to query cockroach or elasticsearch, they can be primary keys e.g
-	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns" validate:"required,dive"`
+	// QueryType to perform on cockroach or elasticsearch
+	QueryType `json:"queryType" yaml:"queryType" validate:"required"`
+	// Type will hold the queryType to perform
+	Type string
 }
 
 // ChangeFeed bind all requrirements to create changefeed
@@ -129,7 +135,45 @@ type ConsumeMessage struct {
 	// Updated timestamp returned by cockroach
 	Updated time.Time `json:"updated"`
 	// Partition returned by redpanda/kafka
-	Partition int `json:"parition"`
+	Partition int `json:"partition"`
 	// Offset returned by redpanda/kafka
 	Offset int `json:"offset"`
+}
+
+// QueryType is the requirement to query or not the SQL database
+type QueryType struct {
+	// Advanced permit to perform advances sql queries
+	Advanced `json:"advanced" yaml:"advanced" validate:"structonly,required_without_all=None Notify"`
+	// None hold only the immutable fields
+	None `json:"none" yaml:"none" validate:"structonly,required_without_all=Advanced Notify"`
+	// Notify hold requirements to update fields in elasticsearch
+	Notify `json:"notify" yaml:"notify" validate:"structonly,required_without_all=Advanced None"`
+}
+
+// Advanced hold the requirements to perform sql query before adding/updating elasticsearch datas
+type Advanced struct {
+	// Immutable columns are used in where clause to query cockroach or elasticsearch, they can be primary keys e.g
+	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns" validate:"required,dive"`
+	// Query hold the query to perform when receiving a a change data capture
+	Query string `json:"query" yaml:"query" validate:"required"`
+}
+
+// None hold the immutables columns that will be in kafka or elasticsearch
+type None struct {
+	// Immutable columns will used in kafka messages fields to and elasticsearch where clauses, they can be primary keys e.g
+	ImmutableColumns []ImmutableColumn `json:"immutableColumns" yaml:"immutableColumns" validate:"required,dive"`
+}
+
+// Notify hold all indexes that need to be updated with the appropriate column list
+type Notify struct {
+	// Indexes list to update
+	Indexes []Index `json:"indexes" yaml:"indexes" validate:"required,dive"`
+}
+
+// Index hold index name and columns that are used by Notify struct
+type Index struct {
+	// Name or index alias to use
+	Name string `json:"name" yaml:"name" validate:"required"`
+	// Column list present in the index to update
+	Columns []string `json:"columns" yaml:"columns" validate:"required"`
 }

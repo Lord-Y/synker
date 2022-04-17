@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -70,11 +71,15 @@ func (c *Validate) Run() {
 	c.Files = files
 	z, err := c.parsing()
 	if err != nil {
-		log.Error().Err(err).Msgf("File %s is invalid", z)
-		return
+		log.Fatal().Err(err).Msgf("File %s is invalid", z)
 	}
 	for _, v := range c.ValidatedFiles {
-		log.Info().Msgf("Config file %s is valid", v)
+		log.Info().Msgf("Config file %s is valid", v.File)
+		if len(v.Queries) > 0 {
+			for _, q := range v.Queries {
+				log.Info().Msgf("SQL queries that will be performed: %s", q)
+			}
+		}
 	}
 }
 
@@ -101,7 +106,11 @@ func (c *Validate) parsing() (file string, err error) {
 		if err != nil {
 			return file, err
 		}
-		var z models.Schemas
+		var (
+			z       models.Schemas
+			zv      models.ValidatedFiles
+			queries []string
+		)
 		if tools.IsYamlFromBytes(fBytes) {
 			err = yaml.Unmarshal(fBytes, &z)
 			if err != nil {
@@ -122,7 +131,28 @@ func (c *Validate) parsing() (file string, err error) {
 				return file, err
 			}
 		}
-		c.ValidatedFiles = append(c.ValidatedFiles, file)
+		for _, v := range z.Schemas {
+			if reflect.ValueOf(v.SQL.QueryType).IsZero() {
+				return file, fmt.Errorf("queryType cannot be empty and must be one of advanced, none, notify")
+			}
+			if !reflect.ValueOf(v.SQL.QueryType.Advanced).IsZero() {
+				q := strings.TrimSpace(v.SQL.QueryType.Advanced.Query)
+				if q != "" {
+					if !strings.Contains(q, ".") {
+						return file, fmt.Errorf("Your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b ...", q)
+					}
+					if strings.Contains(strings.ToLower(q), " where ") && !strings.HasSuffix(q, ")") {
+						return file, fmt.Errorf("Your SQL query `%s` is malformed. It has a WHERE condition AND must be in the format SELECT table_name.column_a,table_name.column_b WHERE (table_name.column_c = 1)", q)
+					}
+					queries = append(queries, q)
+				} else {
+					return file, fmt.Errorf("SQL query cannot be empty for advanced queryType")
+				}
+			}
+		}
+		zv.File = file
+		zv.Queries = queries
+		c.ValidatedFiles = append(c.ValidatedFiles, zv)
 		if len(c.ValidatedSchemas.Schemas) == 0 {
 			c.ValidatedSchemas = z
 		} else {
@@ -298,6 +328,12 @@ func (c *Validate) consume(index int, topic string) {
 		MaxBytes: 10e6,
 	})
 	defer r.Close()
+	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.QueryType.None).IsZero() {
+		c.ValidatedSchemas.Schemas[index].SQL.Type = "none"
+	}
+	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.QueryType.Advanced).IsZero() {
+		c.ValidatedSchemas.Schemas[index].SQL.Type = "advanced"
+	}
 
 	ctx := context.Background()
 	for {
@@ -333,23 +369,54 @@ func (c *Validate) consume(index int, topic string) {
 			return
 		}
 		if value["after"] != nil {
-			exist, id, err := c.SearchByVersion(index, value)
-			if err != nil {
-				log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
-				return
-			}
-			log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
-			if exist {
+			if c.ValidatedSchemas.Schemas[index].SQL.Type == "none" {
+				exist, id, err := c.SearchByVersion(index, value)
+				if err != nil {
+					log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					return
+				}
+				log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
+				var w string
+				if exist {
+					w = fmt.Sprintf("Fail to index kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				} else {
+					w = fmt.Sprintf("Fail to update elasticsearch index document with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				}
 				err = c.IndexNewContent(index, value, id)
 				if err != nil {
-					log.Error().Err(err).Msgf("Fail to index kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					log.Error().Err(err).Msgf(w)
 					return
 				}
 				indexed = true
-			} else {
-				err = c.IndexNewContent(index, value, id)
+			}
+			if c.ValidatedSchemas.Schemas[index].SQL.Type == "advanced" {
+				t := strings.Split(c.ValidatedSchemas.Schemas[index].ChangeFeed.FullTableName, ".")
+				var v map[string]interface{}
+				err = mapstructure.Decode(value["after"], &v)
 				if err != nil {
-					log.Error().Err(err).Msgf("Fail to update elasticsearch index document with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					return
+				}
+				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Advanced.Query, t[len(t)-1], v)
+				if err != nil {
+					log.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message in topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
+					return
+				}
+				log.Debug().Msgf("result %s query %s", result, select_query)
+				exist, id, err := c.SearchByVersion(index, value)
+				if err != nil {
+					log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					return
+				}
+				log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
+				var w string
+				if exist {
+					w = fmt.Sprintf("Fail to index kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				} else {
+					w = fmt.Sprintf("Fail to update elasticsearch index document with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				}
+				err = c.IndexNewContent(index, result, id)
+				if err != nil {
+					log.Error().Err(err).Msgf(w)
 					return
 				}
 				indexed = true
@@ -389,16 +456,31 @@ func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b b
 	}
 
 	esQuery := elastic.NewBoolQuery()
-	for _, v := range c.ValidatedSchemas.Schemas[index].SQL.ImmutableColumns {
-		if value["after"] != nil {
-			var after map[string]interface{}
-			err := mapstructure.Decode(value["after"], &after)
-			if err != nil {
-				log.Info().Msg("Fail to map structure data")
-				return false, "", err
+	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.None).IsZero() {
+		for _, v := range c.ValidatedSchemas.Schemas[index].SQL.None.ImmutableColumns {
+			if value["after"] != nil {
+				var after map[string]interface{}
+				err := mapstructure.Decode(value["after"], &after)
+				if err != nil {
+					return false, "", err
+				}
+				if z, ok := after[v.Name]; ok {
+					esQuery.Must(elastic.NewMatchQuery(v.Name, z))
+				}
 			}
-			if z, ok := after[v.Name]; ok {
-				esQuery.Must(elastic.NewMatchQuery(v.Name, z))
+		}
+	}
+	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.Advanced).IsZero() {
+		for _, v := range c.ValidatedSchemas.Schemas[index].SQL.Advanced.ImmutableColumns {
+			if value["after"] != nil {
+				var after map[string]interface{}
+				err := mapstructure.Decode(value["after"], &after)
+				if err != nil {
+					return false, "", err
+				}
+				if z, ok := after[v.Name]; ok {
+					esQuery.Must(elastic.NewMatchQuery(v.Name, z))
+				}
 			}
 		}
 	}
@@ -441,9 +523,14 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, id s
 	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	var content map[string]interface{}
-	err = mapstructure.Decode(value["after"], &content)
-	if err != nil {
-		return
+	switch c.ValidatedSchemas.Schemas[index].SQL.Type {
+	case "none":
+		err = mapstructure.Decode(value["after"], &content)
+		if err != nil {
+			return
+		}
+	case "advanced":
+		content = value
 	}
 
 	if es_alias != "" {
