@@ -79,10 +79,23 @@ Watching what's in `elasticsearch`:
 curl -s "${SKR_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ```
 
-## Redpanda cleaning
+## Cleaning all
 
 ```bash
 sudo docker stop redpandac01 redpandac02 redpandac03
 sudo docker rm redpandac01 redpandac02 redpandac03
 sudo docker volume rm -f docker_redpandac01 docker_redpandac02 docker_redpandac03
+sudo docker stop elasticsearchc01 elasticsearchc02 elasticsearchc03
+sudo docker rm elasticsearchc01 elasticsearchc02 elasticsearchc03
+sudo docker volume rm -f docker_elasticsearchc01 docker_elasticsearchc02 docker_elasticsearchc03
+```
+
+## Removing only topics and indexes
+
+```bash
+# elasticsearch
+for i in $(curl -s "${SKR_ELASTICSEARCH_URI}/_cat/indices?pretty" | grep -v geoip_databases |awk '{print $3}'); do curl -XDELETE ${SKR_ELASTICSEARCH_URI}/$i;done
+
+# topics
+rpk topic delete -r '.*'
 ```
