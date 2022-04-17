@@ -35,4 +35,5 @@ _testmain.go
 synker_linux*
 synker_darwin*
 synker_windows*
+synker*
 **/.clusters
