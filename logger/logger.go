@@ -20,7 +20,7 @@ func SetCLILoggerLogLevel() {
 		return fmt.Sprintf("%s", i)
 	}
 
-	switch strings.TrimSpace(os.Getenv("SKR_LOG_LEVEL")) {
+	switch strings.TrimSpace(os.Getenv("SYNKER_LOG_LEVEL")) {
 	case "panic":
 		zerolog.SetGlobalLevel(zerolog.PanicLevel)
 	case "fatal":
@@ -41,7 +41,7 @@ func SetCLILoggerLogLevel() {
 
 // SetAPILoggerLogLevel permit to set default log level
 func SetAPILoggerLogLevel() {
-	switch strings.TrimSpace(os.Getenv("SKR_LOG_LEVEL")) {
+	switch strings.TrimSpace(os.Getenv("SYNKER_LOG_LEVEL")) {
 	case "panic":
 		zerolog.SetGlobalLevel(zerolog.PanicLevel)
 	case "fatal":

@@ -23,10 +23,10 @@ func TestPing_fail_auth(t *testing.T) {
 func TestPing_fail(t *testing.T) {
 	assert := assert.New(t)
 
-	os.Setenv("SKR_ELASTICSEARCH_USER", "youhou")
-	os.Setenv("SKR_ELASTICSEARCH_PASSWORD", "youhou")
-	defer os.Unsetenv("SKR_ELASTICSEARCH_USER")
-	defer os.Unsetenv("SKR_ELASTICSEARCH_PASSWORD")
+	os.Setenv("SYNKER_ELASTICSEARCH_USER", "youhou")
+	os.Setenv("SYNKER_ELASTICSEARCH_PASSWORD", "youhou")
+	defer os.Unsetenv("SYNKER_ELASTICSEARCH_USER")
+	defer os.Unsetenv("SYNKER_ELASTICSEARCH_PASSWORD")
 	b := Ping()
 	assert.Equal(true, b)
 }
@@ -119,10 +119,10 @@ func TestCreateIndex_fail(t *testing.T) {
 	}
 	`
 
-	os.Setenv("SKR_ELASTICSEARCH_USER", "youhou")
-	os.Setenv("SKR_ELASTICSEARCH_PASSWORD", "youhou")
-	defer os.Unsetenv("SKR_ELASTICSEARCH_USER")
-	defer os.Unsetenv("SKR_ELASTICSEARCH_PASSWORD")
+	os.Setenv("SYNKER_ELASTICSEARCH_USER", "youhou")
+	os.Setenv("SYNKER_ELASTICSEARCH_PASSWORD", "youhou")
+	defer os.Unsetenv("SYNKER_ELASTICSEARCH_USER")
+	defer os.Unsetenv("SYNKER_ELASTICSEARCH_PASSWORD")
 
 	client, err := Client()
 	assert.Nil(err)

@@ -37,9 +37,9 @@ cockroach demo movr --geo-partitioned-replicas --insecure --http-port 18080
 In the terminal you will execute your `go run`: 
 ```bash
 export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}')
-export SKR_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
-export SKR_ELASTICSEARCH_URI="http://127.0.0.1:9200"
-export SKR_KAFKA_URI="localhost:9092"
+export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
+export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
+export SYNKER_KAFKA_URI="localhost:9092"
 ```
 
 ## Set CockroachDB cluster settings
@@ -76,7 +76,7 @@ rpk topic consume movr.public.promo_codes
 
 Watching what's in `elasticsearch`:
 ```bash
-curl -s "${SKR_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
+curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ```
 
 ## Cleaning all
@@ -94,7 +94,7 @@ sudo docker volume rm -f docker_elasticsearchc01 docker_elasticsearchc02 docker_
 
 ```bash
 # elasticsearch
-for i in $(curl -s "${SKR_ELASTICSEARCH_URI}/_cat/indices?pretty" | grep -v geoip_databases |awk '{print $3}'); do curl -XDELETE ${SKR_ELASTICSEARCH_URI}/$i;done
+for i in $(curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty" | grep -v geoip_databases |awk '{print $3}'); do curl -XDELETE ${SYNKER_ELASTICSEARCH_URI}/$i;done
 
 # topics
 rpk topic delete -r '.*'
