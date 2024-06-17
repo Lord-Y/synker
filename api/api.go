@@ -22,7 +22,9 @@ type API models.Configuration
 
 // init func
 func init() {
-	apiLogger.SetAPILoggerLogLevel()
+	os.Setenv("SYNKER_BATCH_LOG", "true")
+	defer os.Unsetenv("APP_BATCH_LOG")
+	apiLogger.SetLoggerLogLevel()
 
 	if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
 		msg := "SYNKER_PG_URI environment variable must be set"

@@ -19,7 +19,9 @@ import (
 )
 
 func init() {
-	apiLogger.SetAPILoggerLogLevel()
+	os.Setenv("SYNKER_BATCH_LOG", "true")
+	defer os.Unsetenv("APP_BATCH_LOG")
+	apiLogger.SetLoggerLogLevel()
 }
 
 // SetupRouter func handle all routes of the api

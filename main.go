@@ -17,7 +17,9 @@ var (
 )
 
 func init() {
-	logger.SetCLILoggerLogLevel()
+	os.Setenv("SYNKER_BATCH_LOG", "true")
+	defer os.Unsetenv("APP_BATCH_LOG")
+	logger.SetLoggerLogLevel()
 
 	CmdValidate = cmd.Validate(&cli.Context{})
 	VersionDetails = cmd.VersionDetails(&cli.Context{})
