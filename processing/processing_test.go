@@ -14,7 +14,7 @@ import (
 	"github.com/Lord-Y/synker/kafka"
 	"github.com/Lord-Y/synker/tools"
 	"github.com/icrowley/fake"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -358,8 +358,13 @@ func TestValidate_processing_with_new_id(t *testing.T) {
 }
 
 func insertIntoUserPromoCodesForUnitTesting() (err error) {
+	cfg, err := pgxpool.ParseConfig(commons.GetPGURI())
+	if err != nil {
+		return
+	}
+
 	ctx := context.Background()
-	db, err := pgxpool.Connect(ctx, commons.GetPGURI())
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return
 	}

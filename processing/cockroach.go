@@ -11,14 +11,19 @@ import (
 	"github.com/Lord-Y/synker/commons"
 	"github.com/Lord-Y/synker/models"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // countChangeFeed permit to check if change feed exist or not
 func countChangeFeed(full_table_name, status string) (count int, err error) {
+	cfg, err := pgxpool.ParseConfig(commons.GetPGURI())
+	if err != nil {
+		return
+	}
+
 	ctx := context.Background()
-	db, err := pgxpool.Connect(ctx, commons.GetPGURI())
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return
 	}
@@ -39,8 +44,13 @@ func countChangeFeed(full_table_name, status string) (count int, err error) {
 
 // createChangeFeed with create the change feed in the database
 func createChangeFeed(changefeed models.ChangeFeed) (err error) {
+	cfg, err := pgxpool.ParseConfig(commons.GetPGURI())
+	if err != nil {
+		return
+	}
+
 	ctx := context.Background()
-	db, err := pgxpool.Connect(ctx, commons.GetPGURI())
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return
 	}
@@ -86,8 +96,13 @@ func (c *Validate) query(query string, table string, value map[string]interface{
 		}
 	}
 
+	cfg, err := pgxpool.ParseConfig(commons.GetPGURI())
+	if err != nil {
+		return
+	}
+
 	ctx := context.Background()
-	db, err := pgxpool.Connect(ctx, commons.GetPGURI())
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return
 	}
