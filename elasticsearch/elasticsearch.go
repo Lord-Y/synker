@@ -17,18 +17,7 @@ func Ping() (b bool) {
 		client *elastic.Client
 		err    error
 	)
-	if commons.IsElasticsearchAuthEnabled() {
-		client, err = elastic.NewClient(
-			elastic.SetSniff(false),
-			elastic.SetURL(commons.GetElasticsearchURI()),
-			elastic.SetBasicAuth(
-				commons.GetElasticsearchUser(),
-				commons.GetElasticsearchPassword(),
-			),
-		)
-	} else {
-		client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()))
-	}
+	client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()), elastic.SetGzip(true))
 	if err != nil {
 		log.Error().Err(err).Msg("Error occured while pinging ES")
 		return
@@ -44,18 +33,7 @@ func Ping() (b bool) {
 
 // Client permit to create client connection to elasticsearch
 func Client() (client *elastic.Client, err error) {
-	if commons.IsElasticsearchAuthEnabled() {
-		client, err = elastic.NewClient(
-			elastic.SetSniff(false),
-			elastic.SetURL(commons.GetElasticsearchURI()),
-			elastic.SetBasicAuth(
-				commons.GetElasticsearchUser(),
-				commons.GetElasticsearchPassword(),
-			),
-		)
-	} else {
-		client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()))
-	}
+	client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()), elastic.SetGzip(true))
 	if err != nil {
 		return
 	}
