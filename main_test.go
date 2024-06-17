@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -80,7 +80,7 @@ func TestVersionDetails(t *testing.T) {
 
 	app := cli.NewApp()
 	for _, tc := range tests {
-		app.Writer = ioutil.Discard
+		app.Writer = io.Discard
 		app.Commands = []*cli.Command{
 			VersionDetails,
 		}
@@ -113,7 +113,7 @@ func TestValidate(t *testing.T) {
 
 	app := cli.NewApp()
 	for _, tc := range tests {
-		app.Writer = ioutil.Discard
+		app.Writer = io.Discard
 		app.Commands = []*cli.Command{
 			CmdValidate,
 		}

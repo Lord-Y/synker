@@ -5,8 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -47,7 +47,7 @@ func Client() (conn *kafka.Conn, err error) {
 			return
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
-		ca, err = ioutil.ReadFile(commons.GetKafkaCACert())
+		ca, err = os.ReadFile(commons.GetKafkaCACert())
 		if err != nil {
 			return
 		}

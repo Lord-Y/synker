@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -90,7 +90,7 @@ func loadFiles(f string) (z []byte, err error) {
 		return z, fmt.Errorf("Fail to open file `%s` on your system", f)
 	}
 	defer of.Close()
-	fo, err := ioutil.ReadAll(of)
+	fo, err := io.ReadAll(of)
 	if err != nil {
 		return z, fmt.Errorf("Fail to read file content `%s` on your system", f)
 	}
