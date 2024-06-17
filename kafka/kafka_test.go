@@ -2,7 +2,6 @@
 package kafka
 
 import (
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"testing"
@@ -54,17 +53,17 @@ func TestClient_tls_bad(t *testing.T) {
 		assert.Fail("Fail to create certificate requirements")
 		return
 	}
-	err = ioutil.WriteFile(ca.Name(), cab.Bytes(), 0600)
+	err = os.WriteFile(ca.Name(), cab.Bytes(), 0600)
 	if err != nil {
 		assert.Fail("Fail to write content to ca")
 		return
 	}
-	err = ioutil.WriteFile(cert.Name(), certb.Bytes(), 0600)
+	err = os.WriteFile(cert.Name(), certb.Bytes(), 0600)
 	if err != nil {
 		assert.Fail("Fail to write content to cert")
 		return
 	}
-	err = ioutil.WriteFile(key.Name(), keyb.Bytes(), 0600)
+	err = os.WriteFile(key.Name(), keyb.Bytes(), 0600)
 	if err != nil {
 		assert.Fail("Fail to write content to key")
 		return

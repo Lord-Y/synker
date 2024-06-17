@@ -2,7 +2,7 @@
 package crdb
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -10,7 +10,7 @@ import (
 
 func Trigger(c *gin.Context) {
 	var body []byte
-	body, err := ioutil.ReadAll(c.Request.Body)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Error().Err(err).Msg("blooooo")
 	}
