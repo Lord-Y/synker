@@ -24,18 +24,18 @@ type API models.Configuration
 func init() {
 	apiLogger.SetAPILoggerLogLevel()
 
-	if strings.TrimSpace(os.Getenv("SKR_PG_URI")) == "" {
-		msg := "SKR_PG_URI environment variable must be set"
+	if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
+		msg := "SYNKER_PG_URI environment variable must be set"
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
-	if strings.TrimSpace(os.Getenv("SKR_ELASTICSEARCH_URI")) == "" {
-		msg := "SKR_ELASTICSEARCH_URI environment variable must be set"
+	if strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_URI")) == "" {
+		msg := "SYNKER_ELASTICSEARCH_URI environment variable must be set"
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
-	if strings.TrimSpace(os.Getenv("SKR_KAFKA_URI")) == "" {
-		msg := "SKR_KAFKA_URI environment variable must be set"
+	if strings.TrimSpace(os.Getenv("SYNKER_KAFKA_URI")) == "" {
+		msg := "SYNKER_KAFKA_URI environment variable must be set"
 		log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
 		return
 	}
@@ -46,8 +46,8 @@ func (c *API) Run(validated *processing.Validate) {
 	var srv *http.Server
 	router := routers.SetupRouter()
 
-	os.Setenv("SKR_CONFIG_DIR", c.ConfigDir)
-	defer os.Unsetenv("SKR_CONFIG_DIR")
+	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
+	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
 	err := validated.ManageTopics()
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *API) Run(validated *processing.Validate) {
 		return
 	}
 
-	appPort := strings.TrimSpace(os.Getenv("SKR_API_PORT"))
+	appPort := strings.TrimSpace(os.Getenv("SYNKER_API_PORT"))
 	if appPort != "" {
 		srv = &http.Server{
 			Addr:    fmt.Sprintf(":%s", appPort),

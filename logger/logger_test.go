@@ -51,12 +51,12 @@ func TestSetCLILoggerLogLevel(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		os.Setenv("SKR_LOG_LEVEL", tc.logLevel)
+		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
 		SetCLILoggerLogLevel()
 		z := zerolog.GlobalLevel().String()
 
 		assert.Equal(tc.expected, z)
-		os.Unsetenv("SKR_LOG_LEVEL")
+		os.Unsetenv("SYNKER_LOG_LEVEL")
 	}
 }
 
@@ -116,11 +116,11 @@ func TestSetAPILoggerLogLevel(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		os.Setenv("SKR_LOG_LEVEL", tc.logLevel)
+		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
 		SetAPILoggerLogLevel()
 		z := zerolog.GlobalLevel().String()
 
 		assert.Equal(tc.expected, z)
-		os.Unsetenv("SKR_LOG_LEVEL")
+		os.Unsetenv("SYNKER_LOG_LEVEL")
 	}
 }

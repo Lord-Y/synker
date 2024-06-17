@@ -62,13 +62,13 @@ func SetupRouter() *gin.Engine {
 	}
 	router.Use(headerHandler)
 	// disable during unit testing
-	if strings.TrimSpace(os.Getenv("SKR_PROMETHEUS")) != "" {
-		var skr_prometheus_port string = "9101"
-		if strings.TrimSpace(os.Getenv("SKR_PROMETHEUS_PORT")) != "" {
-			skr_prometheus_port = strings.TrimSpace(os.Getenv("SKR_PROMETHEUS_PORT"))
+	if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS")) != "" {
+		var SYNKER_prometheus_port string = "9101"
+		if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT")) != "" {
+			SYNKER_prometheus_port = strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT"))
 		}
 		p := ginprometheus.NewPrometheus("http")
-		p.SetListenAddress(fmt.Sprintf(":%s", skr_prometheus_port))
+		p.SetListenAddress(fmt.Sprintf(":%s", SYNKER_prometheus_port))
 		p.Use(router)
 	}
 

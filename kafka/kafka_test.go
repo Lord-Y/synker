@@ -70,18 +70,18 @@ func TestClient_tls_bad(t *testing.T) {
 		return
 	}
 
-	os.Setenv("SKR_KAFKA_SCRAM", "youhou")
-	os.Setenv("SKR_KAFKA_USER", "youhou")
-	os.Setenv("SKR_KAFKA_PASSWORD", "youhou")
-	os.Setenv("SKR_KAFKA_CACERT", ca.Name())
-	os.Setenv("SKR_KAFKA_CERT", cert.Name())
-	os.Setenv("SKR_KAFKA_KEY", key.Name())
-	defer os.Unsetenv("SKR_KAFKA_SCRAM")
-	defer os.Unsetenv("SKR_KAFKA_USER")
-	defer os.Unsetenv("SKR_KAFKA_PASSWORD")
-	defer os.Unsetenv("SKR_KAFKA_CACERT")
-	defer os.Unsetenv("SKR_KAFKA_CERT")
-	defer os.Unsetenv("SKR_KAFKA_KEY")
+	os.Setenv("SYNKER_KAFKA_SCRAM", "youhou")
+	os.Setenv("SYNKER_KAFKA_USER", "youhou")
+	os.Setenv("SYNKER_KAFKA_PASSWORD", "youhou")
+	os.Setenv("SYNKER_KAFKA_CACERT", ca.Name())
+	os.Setenv("SYNKER_KAFKA_CERT", cert.Name())
+	os.Setenv("SYNKER_KAFKA_KEY", key.Name())
+	defer os.Unsetenv("SYNKER_KAFKA_SCRAM")
+	defer os.Unsetenv("SYNKER_KAFKA_USER")
+	defer os.Unsetenv("SYNKER_KAFKA_PASSWORD")
+	defer os.Unsetenv("SYNKER_KAFKA_CACERT")
+	defer os.Unsetenv("SYNKER_KAFKA_CERT")
+	defer os.Unsetenv("SYNKER_KAFKA_KEY")
 	_, err = Client()
 	assert.Error(err)
 }
@@ -89,12 +89,12 @@ func TestClient_tls_bad(t *testing.T) {
 func TestClient_scram_fail(t *testing.T) {
 	assert := assert.New(t)
 
-	os.Setenv("SKR_KAFKA_SCRAM", "youhou")
-	os.Setenv("SKR_KAFKA_USER", "youhou")
-	os.Setenv("SKR_KAFKA_PASSWORD", "youhou")
-	defer os.Unsetenv("SKR_KAFKA_SCRAM")
-	defer os.Unsetenv("SKR_KAFKA_USER")
-	defer os.Unsetenv("SKR_KAFKA_PASSWORD")
+	os.Setenv("SYNKER_KAFKA_SCRAM", "youhou")
+	os.Setenv("SYNKER_KAFKA_USER", "youhou")
+	os.Setenv("SYNKER_KAFKA_PASSWORD", "youhou")
+	defer os.Unsetenv("SYNKER_KAFKA_SCRAM")
+	defer os.Unsetenv("SYNKER_KAFKA_USER")
+	defer os.Unsetenv("SYNKER_KAFKA_PASSWORD")
 	_, err := Client()
 	assert.Error(err)
 }
@@ -102,10 +102,10 @@ func TestClient_scram_fail(t *testing.T) {
 func TestClient_scram_empty(t *testing.T) {
 	assert := assert.New(t)
 
-	os.Setenv("SKR_KAFKA_USER", "youhou")
-	os.Setenv("SKR_KAFKA_PASSWORD", "youhou")
-	defer os.Unsetenv("SKR_KAFKA_USER")
-	defer os.Unsetenv("SKR_KAFKA_PASSWORD")
+	os.Setenv("SYNKER_KAFKA_USER", "youhou")
+	os.Setenv("SYNKER_KAFKA_PASSWORD", "youhou")
+	defer os.Unsetenv("SYNKER_KAFKA_USER")
+	defer os.Unsetenv("SYNKER_KAFKA_PASSWORD")
 	_, err := Client()
 	assert.Error(err)
 }

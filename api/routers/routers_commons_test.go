@@ -60,8 +60,8 @@ func TestHealth_prometheus(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-	os.Setenv("SKR_PROMETHEUS", "1")
-	defer os.Unsetenv("SKR_PROMETHEUS")
+	os.Setenv("SYNKER_PROMETHEUS", "1")
+	defer os.Unsetenv("SYNKER_PROMETHEUS")
 	router := SetupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
@@ -78,10 +78,10 @@ func TestHealth_prometheus_port(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-	os.Setenv("SKR_PROMETHEUS", "1")
-	os.Setenv("SKR_PROMETHEUS_PORT", "9101")
-	defer os.Unsetenv("SKR_PROMETHEUS")
-	defer os.Unsetenv("SKR_PROMETHEUS_PORT")
+	os.Setenv("SYNKER_PROMETHEUS", "1")
+	os.Setenv("SYNKER_PROMETHEUS_PORT", "9101")
+	defer os.Unsetenv("SYNKER_PROMETHEUS")
+	defer os.Unsetenv("SYNKER_PROMETHEUS_PORT")
 	router := SetupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
