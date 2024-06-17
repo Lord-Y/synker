@@ -9,63 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetCLILoggerLogLevel(t *testing.T) {
-	assert := assert.New(t)
-
-	tests := []struct {
-		logLevel string
-		expected string
-	}{
-		{
-			logLevel: "info",
-			expected: "info",
-		},
-		{
-			logLevel: "warn",
-			expected: "warn",
-		},
-		{
-			logLevel: "debug",
-			expected: "debug",
-		},
-		{
-			logLevel: "error",
-			expected: "error",
-		},
-		{
-			logLevel: "fatal",
-			expected: "fatal",
-		},
-		{
-			logLevel: "trace",
-			expected: "trace",
-		},
-		{
-			logLevel: "panic",
-			expected: "panic",
-		},
-		{
-			logLevel: "plop",
-			expected: "info",
-		},
-	}
-
-	for _, tc := range tests {
-		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
-		SetCLILoggerLogLevel()
-		z := zerolog.GlobalLevel().String()
-
-		assert.Equal(tc.expected, z)
-		os.Unsetenv("SYNKER_LOG_LEVEL")
-	}
-}
-
-func TestCLILogger_info(t *testing.T) {
-	SetCLILoggerLogLevel()
-	log.Info().Msgf("Testing logger")
-}
-
-func TestSetAPILoggerLogLevel(t *testing.T) {
+func TestSetLoggerLogLevel(t *testing.T) {
 	assert := assert.New(t)
 
 	tests := []struct {
@@ -117,10 +61,44 @@ func TestSetAPILoggerLogLevel(t *testing.T) {
 
 	for _, tc := range tests {
 		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
-		SetAPILoggerLogLevel()
+		defer os.Unsetenv("SYNKER_LOG_LEVEL")
+		SetLoggerLogLevel()
 		z := zerolog.GlobalLevel().String()
 
 		assert.Equal(tc.expected, z)
-		os.Unsetenv("SYNKER_LOG_LEVEL")
 	}
+
+	for _, tc := range tests {
+		os.Setenv("SYNKER_BATCH_LOG", "true")
+		defer os.Unsetenv("SYNKER_BATCH_LOG")
+		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
+		defer os.Unsetenv("SYNKER_LOG_LEVEL")
+		SetLoggerLogLevel()
+		z := zerolog.GlobalLevel().String()
+
+		assert.Equal(tc.expected, z)
+	}
+
+	for _, tc := range tests {
+		os.Setenv("SYNKER_LOG_FORMAT_JSON", "true")
+		defer os.Unsetenv("SYNKER_LOG_FORMAT_JSON")
+		os.Setenv("SYNKER_BATCH_LOG", "true")
+		defer os.Unsetenv("SYNKER_BATCH_LOG")
+		os.Setenv("SYNKER_LOG_LEVEL", tc.logLevel)
+		defer os.Unsetenv("SYNKER_LOG_LEVEL")
+		SetLoggerLogLevel()
+		z := zerolog.GlobalLevel().String()
+
+		assert.Equal(tc.expected, z)
+	}
+}
+
+func TestCLILogger_info(t *testing.T) {
+	SetLoggerLogLevel()
+	log.Info().Msgf("Testing logger")
+
+	os.Setenv("SYNKER_LOG_FORMAT_JSON", "true")
+	defer os.Unsetenv("SYNKER_LOG_FORMAT_JSON")
+	SetLoggerLogLevel()
+	log.Info().Msgf("Testing logger")
 }
