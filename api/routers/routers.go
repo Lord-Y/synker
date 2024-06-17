@@ -3,16 +3,15 @@ package routers
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/Lord-Y/synker/api/crdb"
 	"github.com/Lord-Y/synker/api/health"
 	apiLogger "github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/tools"
 	"github.com/gin-contrib/logger"
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	"github.com/rs/zerolog"
@@ -32,23 +31,18 @@ func SetupRouter() *gin.Engine {
 	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
 	router := gin.New()
+	router.Use(requestid.New())
 	router.Use(gin.Recovery())
 
 	router.Use(
 		logger.SetLogger(
 			logger.WithUTC(true),
 			logger.WithLogger(
-				func(c *gin.Context, w io.Writer, d time.Duration) zerolog.Logger {
+				func(c *gin.Context, l zerolog.Logger) zerolog.Logger {
 					return zerolog.New(os.Stdout).
 						With().
 						Timestamp().
-						Str("requestId", requestID).
-						Int("status", c.Writer.Status()).
-						Str("method", c.Request.Method).
-						Str("path", c.Request.URL.Path).
-						Str("ip", c.ClientIP()).
-						Dur("latency", d).
-						Str("user_agent", c.Request.UserAgent()).
+						Str("requestId", requestid.Get(c)).
 						Logger()
 				},
 			),
