@@ -16,24 +16,6 @@ func GetElasticsearchURI() string {
 	return strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_URI"))
 }
 
-// IsElasticsearchAuthEnabled permit to check if elasticsearch auth is enabled
-func IsElasticsearchAuthEnabled() bool {
-	if GetElasticsearchUser() != "" && GetElasticsearchPassword() != "" {
-		return true
-	}
-	return false
-}
-
-// GetElasticsearchURI permit to retrieve OS env variable
-func GetElasticsearchUser() string {
-	return strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_USER"))
-}
-
-// GetElasticsearchURI permit to retrieve OS env variable
-func GetElasticsearchPassword() string {
-	return strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_PASSWORD"))
-}
-
 // GetKafkaURI permit to retrieve OS env variable
 func GetKafkaURI() string {
 	return strings.TrimSpace(os.Getenv("SYNKER_KAFKA_URI"))
