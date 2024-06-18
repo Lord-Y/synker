@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/Lord-Y/synker/cmd"
 	"github.com/Lord-Y/synker/logger"
@@ -40,8 +41,10 @@ func main() {
 		CmdAPI,
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error occured while executing the program")
+	if err := app.Run(os.Args); err != nil {
+		if !strings.Contains(err.Error(), "Required flag") {
+			log.Error().Err(err).Msg("Error occured while executing the program")
+		}
+		os.Exit(1)
 	}
 }
