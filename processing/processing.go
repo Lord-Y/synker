@@ -138,15 +138,15 @@ func (c *Validate) parsing() (file string, err error) {
 				return file, fmt.Errorf("queryType cannot be empty and must be one of advanced, none, notify")
 			}
 			if !reflect.ValueOf(v.SQL.QueryType.Advanced).IsZero() {
-				q := strings.TrimSpace(v.SQL.QueryType.Advanced.Query)
-				if q != "" {
-					if !strings.Contains(q, ".") {
-						return file, fmt.Errorf("Your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b ...", q)
+				query := strings.TrimSpace(v.SQL.QueryType.Advanced.Query)
+				if query != "" {
+					if !strings.Contains(query, ".") {
+						return file, fmt.Errorf("Your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b ...", query)
 					}
-					if strings.Contains(strings.ToLower(q), " where ") && !strings.HasSuffix(q, ")") {
-						return file, fmt.Errorf("Your SQL query `%s` is malformed. It has a WHERE condition AND must be in the format SELECT table_name.column_a,table_name.column_b WHERE (table_name.column_c = 1)", q)
+					if strings.Contains(strings.ToLower(query), " where ") && !strings.HasSuffix(query, ")") {
+						return file, fmt.Errorf("Your SQL query `%s` is malformed. It has a WHERE condition AND must be in the format SELECT table_name.column_a,table_name.column_b WHERE (table_name.column_c = 1)", query)
 					}
-					queries = append(queries, q)
+					queries = append(queries, query)
 				} else {
 					return file, fmt.Errorf("SQL query cannot be empty for advanced queryType")
 				}
@@ -176,12 +176,12 @@ func (c *Validate) ManageTopics() (err error) {
 	}
 	for _, v := range c.ValidatedSchemas.Schemas {
 		if !tools.InSlice(v.Topic.Name, topics) {
-			ct, err := kafka.Client()
+			client, err := kafka.Client()
 			if err != nil {
 				return err
 			}
 			err = kafka.CreateTopic(
-				ct,
+				client,
 				models.CreateTopic{
 					Name:              v.Topic.Name,
 					NumPartitions:     v.Topic.NumPartitions,
@@ -220,7 +220,7 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 					return err
 				}
 				if !create.Acknowledged {
-					return fmt.Errorf("Fail to get index creation ack")
+					return fmt.Errorf("Fail to get index creation acknowledgement")
 				}
 				if alias != "" {
 					if alias != "" && index != alias {
@@ -236,7 +236,7 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 							return err
 						}
 						if !alias_create.Acknowledged {
-							return fmt.Errorf("Fail to get alias creation ack")
+							return fmt.Errorf("Fail to get alias creation acknowledgement")
 						}
 					} else {
 						return fmt.Errorf("Index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
@@ -265,7 +265,7 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 							return err
 						}
 						if !alias_create.Acknowledged {
-							return fmt.Errorf("Fail to get alias creation ack")
+							return fmt.Errorf("Fail to get alias creation acknowledgement")
 						}
 					}
 				} else {
@@ -516,7 +516,7 @@ func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b b
 	return
 }
 
-func (c *Validate) IndexNewContent(index int, value map[string]interface{}, id string) (err error) {
+func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniqId string) (err error) {
 	var es_target_index string
 	client, err := elasticsearch.Client()
 	defer client.Stop()
@@ -541,7 +541,7 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, id s
 		es_target_index = es_index
 	}
 	ctx := context.Background()
-	if id == "" {
+	if uniqId == "" {
 		uuidgen := uuid.New()
 		_, err = client.
 			Index().
@@ -552,7 +552,7 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, id s
 	} else {
 		_, err = client.Update().
 			Index(es_target_index).
-			Id(id).
+			Id(uniqId).
 			Doc(content).
 			Do(ctx)
 	}
