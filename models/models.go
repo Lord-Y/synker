@@ -57,13 +57,13 @@ type ConfigSchema struct {
 	// Schema name
 	Name string `json:"name" yaml:"name" validate:"required"`
 	// Topic schema
-	Topic TopicSchema `json:"topic" yaml:"topic" validate:"required,dive"`
+	Topic TopicSchema `json:"topic" yaml:"topic" validate:"required"`
 	// SQL schema
-	SQL SQLSchema `json:"sql" yaml:"sql" validate:"required,dive"`
+	SQL SQLSchema `json:"sql" yaml:"sql" validate:"required"`
 	// Elasticsearch configuration
-	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch" validate:"required,dive"`
-	// Requirements to create change feed
-	ChangeFeed ChangeFeed `json:"changeFeed" yaml:"changeFeed" validate:"required,dive"`
+	Elasticsearch ElasticsearchSchema `json:"elasticsearch" yaml:"elasticsearch" validate:"required"`
+	// // Requirements to create change feed
+	ChangeFeed ChangeFeed `json:"changeFeed" yaml:"changeFeed" validate:"required"`
 	// SQLQuery hold the validated query perform when query type is advanced
 	SQLQuery string
 }
@@ -90,9 +90,9 @@ type SQLSchema struct {
 
 // ChangeFeed bind all requrirements to create changefeed
 type ChangeFeed struct {
-	// Cockroach full table name like movr.public.promo_codes
+	// FullTableName is cockroach full table name like movr.public.promo_codes
 	FullTableName string `json:"fullTableName" yaml:"fullTableName" validate:"required"`
-	// Column type
+	// Options is all change feed options required to create the change feed
 	Options []string `json:"options" yaml:"options" validate:"required"`
 }
 
