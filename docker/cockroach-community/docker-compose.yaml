@@ -85,20 +85,6 @@ services:
     networks:
     - synker_cluster
     restart: always
-  haproxy:
-    image: haproxy:2.4-bullseye
-    container_name: haproxy
-    depends_on:
-    - elasticsearchc01
-    - elasticsearchc02
-    - elasticsearchc03
-    ports:
-    - 1936:1936
-    - 9200:9200
-    volumes:
-    - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-    networks:
-    - synker_cluster
   redpandac01:
     image: docker.vectorized.io/vectorized/redpanda:v21.10.1
     container_name: redpandac01
@@ -110,7 +96,7 @@ services:
     ports:
     - 8082:8082
     - 9092:9092
-    - 9644:9644
+    #- 9644:9644
     restart: always
     command:
     - redpanda
@@ -128,11 +114,11 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8082
     - --advertise-pandaproxy-addr
-    - 127.0.0.1:8082
+    - 0.0.0.0:8082
     - --kafka-addr
     - 0.0.0.0:9092
     - --advertise-kafka-addr
-    - 127.0.0.1:9092
+    - 0.0.0.0:9092
     - --rpc-addr
     - 0.0.0.0:33145
     - --advertise-rpc-addr
@@ -145,9 +131,9 @@ services:
     - redpandac02:/var/lib/redpanda/data
     networks:
     - synker_cluster
+    restart: always
     ports:
     - 9093:9093
-    restart: always
     command:
     - redpanda
     - start
@@ -166,11 +152,11 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8083
     - --advertise-pandaproxy-addr
-    - 127.0.0.1:8083
+    - 0.0.0.0:9093
     - --kafka-addr
     - 0.0.0.0:9093
     - --advertise-kafka-addr
-    - 127.0.0.1:9093
+    - 0.0.0.0:9093
     - --rpc-addr
     - 0.0.0.0:33146
     - --advertise-rpc-addr
@@ -183,9 +169,9 @@ services:
     - redpandac03:/var/lib/redpanda/data
     networks:
     - synker_cluster
+    restart: always
     ports:
     - 9094:9094
-    restart: always
     command:
     - redpanda
     - start
@@ -204,15 +190,87 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8084
     - --advertise-pandaproxy-addr
-    - 127.0.0.1:8084
+    - 0.0.0.0:8084
     - --kafka-addr
     - 0.0.0.0:9094
     - --advertise-kafka-addr
-    - 127.0.0.1:9094
+    - 0.0.0.0:9094
     - --rpc-addr
     - 0.0.0.0:33147
     - --advertise-rpc-addr
     - redpandac03:33147
+  cockroachc01:
+    image: cockroachdb/cockroach:v24.1.1
+    container_name: cockroachc01
+    hostname: cockroachc01
+    volumes:
+    - cockroachc01:/var/lib/cockroach/data
+    networks:
+    - synker_cluster
+    restart: always
+    command:
+    - start
+    - --advertise-addr=cockroachc01:26357
+    - --http-addr=0.0.0.0:8080
+    - --listen-addr=0.0.0.0:26357
+    - --sql-addr=0.0.0.0:26257
+    - --insecure
+    - --join=cockroachc01:26357,cockroachc02:26357,cockroachc03:26357
+  cockroachc02:
+    image: cockroachdb/cockroach:v24.1.1
+    container_name: cockroachc02
+    hostname: cockroachc02
+    volumes:
+    - cockroachc02:/var/lib/cockroach/data
+    networks:
+    - synker_cluster
+    restart: always
+    command:
+    - start
+    - --advertise-addr=cockroachc02:26357
+    - --http-addr=0.0.0.0:8080
+    - --listen-addr=0.0.0.0:26357
+    - --sql-addr=0.0.0.0:26257
+    - --insecure
+    - --join=cockroachc01:26357,cockroachc02:26357,cockroachc03:26357
+  cockroachc03:
+    image: cockroachdb/cockroach:v24.1.1
+    container_name: cockroachc03
+    hostname: cockroachc03
+    volumes:
+    - cockroachc03:/var/lib/cockroach/data
+    networks:
+    - synker_cluster
+    restart: always
+    command:
+    - start
+    - --advertise-addr=cockroachc03:26357
+    - --http-addr=0.0.0.0:8080
+    - --listen-addr=0.0.0.0:26357
+    - --sql-addr=0.0.0.0:26257
+    - --insecure
+    - --join=cockroachc01:26357,cockroachc02:26357,cockroachc03:26357
+  haproxy:
+    image: haproxy:2.4-bullseye
+    container_name: haproxy
+    depends_on:
+    - elasticsearchc01
+    - elasticsearchc02
+    - elasticsearchc03
+    - cockroachc01
+    - cockroachc02
+    - cockroachc03
+    ports:
+    - 1936:1936   # haproxy stats
+    - 9200:9200   # elasticsearch cluster
+    - 26257:26257 # cockroach cluster
+    - 8090:8090   # cockroach ui
+    - 8082:8082   # redpanda proxy
+    - 9092:9092   # redpanda kafka
+    volumes:
+    - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+    - synker_cluster
 
 networks:
   synker_cluster:
@@ -224,3 +282,6 @@ volumes:
   redpandac01:
   redpandac02:
   redpandac03:
+  cockroachc01:
+  cockroachc02:
+  cockroachc03:
