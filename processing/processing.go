@@ -78,8 +78,8 @@ func (c *Validate) Run() {
 	for _, v := range c.ValidatedFiles {
 		log.Info().Msgf("Config file %s is valid", v.File)
 		if len(v.Queries) > 0 {
-			for _, q := range v.Queries {
-				log.Info().Msgf("SQL queries that will be performed: %s", q)
+			for _, query := range v.Queries {
+				log.Info().Msgf("SQL query that will be executed: %s", query)
 			}
 		}
 	}
@@ -170,10 +170,12 @@ func (c *Validate) ManageTopics() (err error) {
 	if err != nil {
 		return err
 	}
+
 	topics, err := kafka.ListTopics(ls)
 	if err != nil {
 		return err
 	}
+
 	for _, v := range c.ValidatedSchemas.Schemas {
 		if !tools.InSlice(v.Topic.Name, topics) {
 			client, err := kafka.Client()
@@ -318,6 +320,7 @@ func (c *Validate) consume(index int, topic string) {
 		return
 	}
 	defer conn.Close()
+
 	brokers := []string{
 		conn.Broker().Host,
 		strconv.Itoa(conn.Broker().Port),
@@ -330,6 +333,7 @@ func (c *Validate) consume(index int, topic string) {
 		MaxBytes: 10e6,
 	})
 	defer r.Close()
+
 	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.QueryType.None).IsZero() {
 		c.ValidatedSchemas.Schemas[index].SQL.Type = "none"
 	}
@@ -340,57 +344,81 @@ func (c *Validate) consume(index int, topic string) {
 	ctx := context.Background()
 	for {
 		var (
-			message models.ConsumeMessage
-			value   map[string]interface{}
-			mbytes  []byte
-			indexed bool
+			message          models.ConsumeMessage
+			value            map[string]interface{}
+			key              []string
+			mkBytes, mvBytes []byte
+			indexed, deleted bool
+			esIndex          string
 		)
+
 		m, err := r.FetchMessage(ctx)
 		if err != nil {
 			break
 		}
+
 		log.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		mjson, err := json.Marshal(m)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to marshall kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			log.Error().Err(err).Msgf("Fail to marshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
+
 		err = json.Unmarshal(mjson, &message)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to unmarshall kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			log.Error().Err(err).Msgf("Fail to unmarshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
-		mbytes, err = base64.StdEncoding.DecodeString(message.Value)
+
+		mkBytes, err = base64.StdEncoding.DecodeString(message.Key)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to decode base64 value key from message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			log.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
-		err = json.Unmarshal(mbytes, &value)
+
+		err = json.Unmarshal(mkBytes, &key)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to unmarshall value key from kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			log.Error().Err(err).Msgf("Fail to unmarshall field key from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
+
+		mvBytes, err = base64.StdEncoding.DecodeString(message.Value)
+		if err != nil {
+			log.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			return
+		}
+
+		err = json.Unmarshal(mvBytes, &value)
+		if err != nil {
+			log.Error().Err(err).Msgf("Fail to unmarshall field value from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			return
+		}
+
 		if value["after"] != nil {
 			if c.ValidatedSchemas.Schemas[index].SQL.Type == "none" {
-				exist, id, err := c.SearchByVersion(index, value)
+				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 				if err != nil {
-					log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					log.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
-				log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
-				var w string
+
+				log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
+				var errorMessage string
 				if exist {
-					w = fmt.Sprintf("Fail to index kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					errorMessage = fmt.Sprintf("Fail to index kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 				} else {
-					w = fmt.Sprintf("Fail to update elasticsearch index document with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					errorMessage = fmt.Sprintf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 				}
+
 				err = c.IndexNewContent(index, value, id)
 				if err != nil {
-					log.Error().Err(err).Msgf(w)
+					log.Error().Err(err).Msgf(errorMessage)
 					return
 				}
 				indexed = true
+				esIndex = esTargetIndex
 			}
+
 			if c.ValidatedSchemas.Schemas[index].SQL.Type == "advanced" {
 				t := strings.Split(c.ValidatedSchemas.Schemas[index].ChangeFeed.FullTableName, ".")
 				var v map[string]interface{}
@@ -398,36 +426,76 @@ func (c *Validate) consume(index int, topic string) {
 				if err != nil {
 					return
 				}
+
 				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Advanced.Query, t[len(t)-1], v)
 				if err != nil {
-					log.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message in topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
+					log.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
 					return
 				}
+
 				log.Debug().Msgf("result %s query %s", result, select_query)
-				exist, id, err := c.SearchByVersion(index, value)
+				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 				if err != nil {
-					log.Error().Err(err).Msgf("Document already exist in elasticsearch with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					log.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
+
 				log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
-				var w string
+				var errorMessage string
 				if exist {
-					w = fmt.Sprintf("Fail to index kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					errorMessage = fmt.Sprintf("Fail to index kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 				} else {
-					w = fmt.Sprintf("Fail to update elasticsearch index document with kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					errorMessage = fmt.Sprintf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 				}
+
 				err = c.IndexNewContent(index, result, id)
 				if err != nil {
-					log.Error().Err(err).Msgf(w)
+					log.Error().Err(err).Msgf(errorMessage)
 					return
 				}
 				indexed = true
+				esIndex = esTargetIndex
 			}
+
+			if indexed {
+				log.Debug().Msgf("Kafka message has been indexed into elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
+				if err := r.CommitMessages(ctx, m); err != nil {
+					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					return
+				}
+				log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+			}
+			return
 		}
-		if indexed {
-			log.Debug().Msgf("Kafka message has been indexed in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+
+		exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
+		if err != nil {
+			log.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
+			return
+		}
+
+		log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
+		var errorMessage string
+		if exist {
+			errorMessage = fmt.Sprintf("Fail to delete kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+		} else {
+			errorMessage = fmt.Sprintf("Fail to delete elasticsearch document with id %s in index %s with kafka message from topic %s on partition %d and offset %d", id, esTargetIndex, m.Topic, m.Partition, m.Offset)
+		}
+
+		if exist {
+			err = c.DeleteContent(index, id)
+			if err != nil {
+				log.Error().Err(err).Msgf(errorMessage)
+				return
+			}
+			deleted = true
+			esIndex = esTargetIndex
+		}
+
+		if deleted {
+			log.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 			if err := r.CommitMessages(ctx, m); err != nil {
-				log.Error().Err(err).Msgf("Fail to commit kafka message in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 				return
 			}
 			log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
@@ -435,94 +503,123 @@ func (c *Validate) consume(index int, topic string) {
 	}
 }
 
-func (c *Validate) SearchByVersion(index int, value map[string]interface{}) (b bool, id string, err error) {
-	var es_target_index string
+// SearchByVersion permit to search into elasticsearch
+// if the new data provided already exist
+// if it exist, it will return the elasticsearch id
+// if it exist multiple times, an error will be returned
+func (c *Validate) SearchByVersion(index int, key []string, value map[string]interface{}) (found bool, id, esTargetIndex string, err error) {
 	client, err := elasticsearch.Client()
 	if err != nil {
 		return
 	}
 	defer client.Stop()
-	ctx := context.Background()
-	es_alias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
-	if es_alias != "" {
-		es_target_index = es_alias
+	ctx := context.Background()
+	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+
+	if esAlias != "" {
+		esTargetIndex = esAlias
 	} else {
-		es_target_index = es_index
+		esTargetIndex = esIndex
 	}
 
-	_, err = client.Refresh().Index(es_target_index).Do(ctx)
+	_, err = client.Refresh().Index(esTargetIndex).Do(ctx)
 	if err != nil {
 		return
 	}
 
+	var documentToDelete bool
 	esQuery := elastic.NewBoolQuery()
 	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.None).IsZero() {
-		for _, v := range c.ValidatedSchemas.Schemas[index].SQL.None.ImmutableColumns {
+		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.None.ImmutableColumns {
 			if value["after"] != nil {
 				var after map[string]interface{}
 				err := mapstructure.Decode(value["after"], &after)
 				if err != nil {
-					return false, "", err
+					return false, "", esTargetIndex, err
 				}
-				if z, ok := after[v.Name]; ok {
-					esQuery.Must(elastic.NewMatchQuery(v.Name, z))
+				if z, ok := after[column.Name]; ok {
+					esQuery.Must(elastic.NewMatchQuery(column.Name, z))
+				}
+			} else {
+				documentToDelete = true
+				for _, v := range key {
+					esQuery.Must(elastic.NewMatchQuery(column.Name, v))
 				}
 			}
 		}
 	}
+
 	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.Advanced).IsZero() {
-		for _, v := range c.ValidatedSchemas.Schemas[index].SQL.Advanced.ImmutableColumns {
+		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.Advanced.ImmutableColumns {
 			if value["after"] != nil {
 				var after map[string]interface{}
 				err := mapstructure.Decode(value["after"], &after)
 				if err != nil {
-					return false, "", err
+					return false, "", esTargetIndex, err
 				}
-				if z, ok := after[v.Name]; ok {
-					esQuery.Must(elastic.NewMatchQuery(v.Name, z))
+				if z, ok := after[column.Name]; ok {
+					esQuery.Must(elastic.NewMatchQuery(column.Name, z))
+				}
+			} else {
+				documentToDelete = true
+				for _, v := range key {
+					esQuery.Must(elastic.NewMatchQuery(column.Name, v))
 				}
 			}
 		}
 	}
+
 	src, err := esQuery.Source()
 	if err != nil {
 		return
 	}
+
 	data, err := json.Marshal(src)
 	if err != nil {
 		return
 	}
 
 	result, err := client.Search().
-		Index(es_target_index).
+		Index(esTargetIndex).
 		Query(esQuery).
 		FetchSourceContext(elastic.NewFetchSourceContext(true)).
 		Do(ctx)
 	if err != nil {
 		return
 	}
+
 	if result.TotalHits() > 0 {
+		log.Info().Msgf("number %d %+v %t", len(result.Hits.Hits), result.Hits.Hits, documentToDelete)
+		if documentToDelete {
+			for _, hit := range result.Hits.Hits {
+				id = hit.Id
+			}
+			return true, id, esTargetIndex, nil
+		}
+
 		if len(result.Hits.Hits) > 1 {
-			log.Info().Msgf("Elasticsearch search query on index %s %s", es_target_index, string(data))
-			return false, "", fmt.Errorf("Multiple document found with same data")
+			log.Info().Msgf("Elasticsearch search query on index %s %s", esTargetIndex, string(data))
+			return false, "", esTargetIndex, fmt.Errorf("Multiple document found with same data")
 		}
 		for _, hit := range result.Hits.Hits {
 			id = hit.Id
 		}
-		return true, id, nil
+		return true, id, esTargetIndex, nil
 	}
 	return
 }
 
+// IndexNewContent permit to add or update provided data
+// into elasticsearch index
 func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniqId string) (err error) {
-	var es_target_index string
+	var esTargetIndex string
 	client, err := elasticsearch.Client()
 	defer client.Stop()
 
-	es_alias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	es_index := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	var content map[string]interface{}
 	switch c.ValidatedSchemas.Schemas[index].SQL.Type {
@@ -535,27 +632,59 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniq
 		content = value
 	}
 
-	if es_alias != "" {
-		es_target_index = es_alias
+	if esAlias != "" {
+		esTargetIndex = esAlias
 	} else {
-		es_target_index = es_index
+		esTargetIndex = esIndex
 	}
+
 	ctx := context.Background()
 	if uniqId == "" {
 		uuidgen := uuid.New()
 		_, err = client.
 			Index().
-			Index(es_target_index).
+			Index(esTargetIndex).
 			Id(uuidgen.String()).
 			BodyJson(content).
 			Do(ctx)
 	} else {
 		_, err = client.Update().
-			Index(es_target_index).
+			Index(esTargetIndex).
 			Id(uniqId).
 			Doc(content).
 			Do(ctx)
 	}
+
+	if err != nil {
+		return
+	}
+	return
+}
+
+// DeleteContent permit to delete data with the provided id
+// from elasticsearch index
+func (c *Validate) DeleteContent(index int, id string) (err error) {
+	var esTargetIndex string
+	client, err := elasticsearch.Client()
+	defer client.Stop()
+
+	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+
+	if esAlias != "" {
+		esTargetIndex = esAlias
+	} else {
+		esTargetIndex = esIndex
+	}
+
+	ctx := context.Background()
+
+	_, err = client.
+		Delete().
+		Index(esTargetIndex).
+		Id(id).
+		Do(ctx)
+
 	if err != nil {
 		return
 	}
