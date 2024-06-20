@@ -344,12 +344,12 @@ func (c *Validate) consume(index int, topic string) {
 	ctx := context.Background()
 	for {
 		var (
-			message          models.ConsumeMessage
-			value            map[string]interface{}
-			key              []string
-			mkBytes, mvBytes []byte
-			indexed, deleted bool
-			esIndex          string
+			message                          models.ConsumeMessage
+			value                            map[string]interface{}
+			key                              []string
+			mkBytes, mvBytes                 []byte
+			documentIndexed, documentDeleted bool
+			esIndex                          string
 		)
 
 		m, err := r.FetchMessage(ctx)
@@ -415,7 +415,7 @@ func (c *Validate) consume(index int, topic string) {
 					log.Error().Err(err).Msgf(errorMessage)
 					return
 				}
-				indexed = true
+				documentIndexed = true
 				esIndex = esTargetIndex
 			}
 
@@ -453,11 +453,11 @@ func (c *Validate) consume(index int, topic string) {
 					log.Error().Err(err).Msgf(errorMessage)
 					return
 				}
-				indexed = true
+				documentIndexed = true
 				esIndex = esTargetIndex
 			}
 
-			if indexed {
+			if documentIndexed {
 				log.Debug().Msgf("Kafka message has been indexed into elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 				if err := r.CommitMessages(ctx, m); err != nil {
 					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
@@ -465,40 +465,39 @@ func (c *Validate) consume(index int, topic string) {
 				}
 				log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
 			}
-			return
-		}
-
-		exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
-		if err != nil {
-			log.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
-			return
-		}
-
-		log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
-		var errorMessage string
-		if exist {
-			errorMessage = fmt.Sprintf("Fail to delete kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 		} else {
-			errorMessage = fmt.Sprintf("Fail to delete elasticsearch document with id %s in index %s with kafka message from topic %s on partition %d and offset %d", id, esTargetIndex, m.Topic, m.Partition, m.Offset)
-		}
-
-		if exist {
-			err = c.DeleteContent(index, id)
+			exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 			if err != nil {
-				log.Error().Err(err).Msgf(errorMessage)
+				log.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
 				return
 			}
-			deleted = true
-			esIndex = esTargetIndex
-		}
 
-		if deleted {
-			log.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
-			if err := r.CommitMessages(ctx, m); err != nil {
-				log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
-				return
+			log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
+			var errorMessage string
+			if exist {
+				errorMessage = fmt.Sprintf("Fail to delete kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			} else {
+				errorMessage = fmt.Sprintf("Fail to delete elasticsearch document with id %s in index %s with kafka message from topic %s on partition %d and offset %d", id, esTargetIndex, m.Topic, m.Partition, m.Offset)
 			}
-			log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+
+			if exist {
+				err = c.DeleteContent(index, id)
+				if err != nil {
+					log.Error().Err(err).Msgf(errorMessage)
+					return
+				}
+				documentDeleted = true
+				esIndex = esTargetIndex
+			}
+
+			if documentDeleted {
+				log.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
+				if err := r.CommitMessages(ctx, m); err != nil {
+					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					return
+				}
+				log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+			}
 		}
 	}
 }
@@ -591,7 +590,6 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 	}
 
 	if result.TotalHits() > 0 {
-		log.Info().Msgf("number %d %+v %t", len(result.Hits.Hits), result.Hits.Hits, documentToDelete)
 		if documentToDelete {
 			for _, hit := range result.Hits.Hits {
 				id = hit.Id
