@@ -580,6 +580,8 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 		return
 	}
 
+	log.Trace().Msgf("Elasticsearch query %s", string(data))
+
 	result, err := client.Search().
 		Index(esTargetIndex).
 		Query(esQuery).
