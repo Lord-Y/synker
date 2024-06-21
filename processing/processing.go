@@ -463,7 +463,7 @@ func (c *Validate) consume(index int, topic string) {
 					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}
-				log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+				log.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			}
 		} else {
 			exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
@@ -496,7 +496,7 @@ func (c *Validate) consume(index int, topic string) {
 					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}
-				log.Debug().Msgf("Kafka message with offset %d has been commited in topic %s on partition %d", m.Offset, m.Topic, m.Partition)
+				log.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			}
 		}
 	}
