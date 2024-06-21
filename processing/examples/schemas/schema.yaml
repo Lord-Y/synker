@@ -135,8 +135,8 @@ schemas:
     queryType:
       none:
         immutableColumns:
-        - name: code
-          type: varchar
+        - name: id
+          type: uuid
   elasticsearch:
     index:
       name: users
