@@ -2,6 +2,7 @@
 package elasticsearch
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,10 +14,12 @@ func TestPing(t *testing.T) {
 	assert.Equal(true, b)
 }
 
-func TestPing_fail_auth(t *testing.T) {
+func TestPing_fail(t *testing.T) {
 	assert := assert.New(t)
+	os.Setenv("SYNKER_ELASTICSEARCH_URI", "http://127.0.0.1:19200")
 	b := Ping()
-	assert.Equal(true, b)
+	assert.Equal(false, b)
+	os.Setenv("SYNKER_ELASTICSEARCH_URI", "http://127.0.0.1:9200")
 }
 
 func TestClient(t *testing.T) {

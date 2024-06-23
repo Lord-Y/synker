@@ -24,7 +24,7 @@ func Ping() (b bool) {
 	}
 	defer client.Stop()
 	_, code, err = client.Ping(commons.GetElasticsearchURI()).HttpHeadOnly(true).Do(context.TODO())
-	if code != http.StatusOK {
+	if code != http.StatusOK || err != nil {
 		log.Error().Err(err).Msgf("Error occured while pinging ES http status %d", code)
 		return
 	}
