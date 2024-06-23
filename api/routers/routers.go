@@ -9,7 +9,6 @@ import (
 	"github.com/Lord-Y/synker/api/crdb"
 	"github.com/Lord-Y/synker/api/health"
 	apiLogger "github.com/Lord-Y/synker/logger"
-	"github.com/Lord-Y/synker/tools"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,6 @@ func init() {
 func SetupRouter() *gin.Engine {
 	gin.DisableConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
-	requestID := tools.RandStringInt(32)
 
 	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
@@ -50,21 +48,15 @@ func SetupRouter() *gin.Engine {
 			),
 		),
 	)
-	headerHandler := func(c *gin.Context) {
-		if c.GetHeader("X-Request-Id") == "" {
-			c.Request.Header.Set("X-Request-Id", requestID)
-			c.Next()
-		}
-	}
-	router.Use(headerHandler)
+
 	// disable during unit testing
 	if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS")) != "" {
-		var SYNKER_prometheus_port string = "9101"
+		prometheus_port := "9101"
 		if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT")) != "" {
-			SYNKER_prometheus_port = strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT"))
+			prometheus_port = strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT"))
 		}
 		p := ginprometheus.NewPrometheus("http")
-		p.SetListenAddress(fmt.Sprintf(":%s", SYNKER_prometheus_port))
+		p.SetListenAddressWithRouter(fmt.Sprintf(":%s", prometheus_port), router)
 		p.Use(router)
 	}
 
