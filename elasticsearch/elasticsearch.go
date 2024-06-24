@@ -19,7 +19,7 @@ func Ping() (b bool) {
 	)
 	client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()), elastic.SetGzip(true))
 	if err != nil {
-		log.Error().Err(err).Msg("Error occured while pinging ES")
+		log.Error().Err(err).Msg("Error occured while creating ES client")
 		return
 	}
 	defer client.Stop()
