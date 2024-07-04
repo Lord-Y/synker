@@ -11,47 +11,53 @@ Then, enable the hook in our project:
 git config core.hooksPath .githooks
 ```
 
-## Start the clusters
+## Required packages
 
-Set `sysctl` values permanently for elasticsearch if not already done in your user environment:
+As prerequites, these must be installed:
+- [JQ binary](https://github.com/stedolan/jq/releases)
+- [CockroachDB binary](https://www.cockroachlabs.com/docs/releases/)
+- [Redpanda binary](https://github.com/redpanda-data/redpanda/releases)
+
+## Start all clusters
+
+Set `sysctl` values permanently for elasticsearch if not already done in your linux host:
 ```bash
 cat <<EOF | sudo tee -a /etc/sysctl.d/10-custom.conf
 vm.max_map_count=262144
 EOF
 sudo sysctl -p /etc/sysctl.d/10-custom.conf
 ```
-Start the clusters:
+
+Start all clusters:
 ```bash
-sudo docker-compose -f docker/docker-compose.yaml up -d
+sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml up -d
 ```
 
 ## Start CockroachDB cluster
 
 To start the cluster execute this command in a separate terminal:
 ```bash
-cockroach demo movr --geo-partitioned-replicas --insecure --http-port 18080
+cockroach demo movr --insecure --http-port 8090
 ```
+Don't quit otherwise, this cluster will be shut down.
 
-## Set default variables
+## Start the api with default environment variables
 
-In the terminal you will execute your `go run`: 
 ```bash
-export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}')
+export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
 export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
 export SYNKER_KAFKA_URI="localhost:9092"
-```
 
-## Set CockroachDB cluster settings
-
-```bash
-docker/cockroach_init.sh
-```
-
-## Start the api
-
-```bash
 go run main.go api -c processing/examples/schemas/
+```
+
+## Execute workload against the stack
+
+```
+export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
+export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
+cockroach workload run movr --duration=1m "${SYNKER_PG_URI}"
 ```
 
 ## Golang test
@@ -79,15 +85,12 @@ Watching what's in `elasticsearch`:
 curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ```
 
-## Cleaning all
+## Cleaning everything
 
 ```bash
-sudo docker stop redpandac01 redpandac02 redpandac03
-sudo docker rm redpandac01 redpandac02 redpandac03
-sudo docker volume rm -f docker_redpandac01 docker_redpandac02 docker_redpandac03
-sudo docker stop elasticsearchc01 elasticsearchc02 elasticsearchc03
-sudo docker rm elasticsearchc01 elasticsearchc02 elasticsearchc03
-sudo docker volume rm -f docker_elasticsearchc01 docker_elasticsearchc02 docker_elasticsearchc03
+sudo docker-compose down -v
+# clean and restart:
+sudo docker-compose down -v && sleep 5 && sudo docker-compose up -d && watch curl -s 0:9200/_cat/indices?v
 ```
 
 ## Removing only topics and indexes
