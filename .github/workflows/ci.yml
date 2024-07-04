@@ -35,10 +35,10 @@ jobs:
       run: |
         sudo mkdir -p /usr/local/lib/cockroach
         cd /tmp
-        wget -O /cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64.tgz https://binaries.cockroachdb.com/cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64.tgz
-        sudo mv cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64/cockroach /usr/local/bin/cockroach
-        sudo mv cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64/lib/libgeos.so /usr/local/lib/cockroach
-        sudo mv cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64/lib/libgeos_c.so /usr/local/lib/cockroach
+        wget -O /cockroach-v${COCKROACHDB_VERSION}.linux-amd64.tgz https://binaries.cockroachdb.com/cockroach-v${COCKROACHDB_VERSION}.linux-amd64.tgz
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/cockroach /usr/local/bin/cockroach
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos.so /usr/local/lib/cockroach
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos_c.so /usr/local/lib/cockroach
 
     - name: Setup sysctl
       run: |
