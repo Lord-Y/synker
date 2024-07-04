@@ -33,7 +33,7 @@ jobs:
 
     - name: Install CockroachDB
       run: |
-        mkdir -p /usr/local/lib/cockroach
+        sudo mkdir -p /usr/local/lib/cockroach
         cd /tmp
         wget -O /cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64.tgz https://binaries.cockroachdb.com/cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64.tgz
         sudo mv cockroach-v{{ COCKROACHDB_VERSION }}.linux-amd64/cockroach /usr/local/bin/cockroach
