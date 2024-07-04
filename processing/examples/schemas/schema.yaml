@@ -15,12 +15,6 @@ schemas:
     - on_error = 'pause'
     - protect_data_from_gc_on_pause
     - updated
-  sql:
-    queryType:
-      none:
-        immutableColumns:
-        - name: code
-          type: varchar
   elasticsearch:
     index:
       name: promo_codes
@@ -72,12 +66,6 @@ schemas:
     - on_error = 'pause'
     - protect_data_from_gc_on_pause
     - updated
-  sql:
-    queryType:
-      none:
-        immutableColumns:
-        - name: user_id
-          type: uuid
   elasticsearch:
     index:
       name: user_promo_codes
@@ -131,12 +119,6 @@ schemas:
     - on_error = 'pause'
     - protect_data_from_gc_on_pause
     - updated
-  sql:
-    queryType:
-      none:
-        immutableColumns:
-        - name: id
-          type: uuid
   elasticsearch:
     index:
       name: users
@@ -192,14 +174,6 @@ schemas:
     - on_error = 'pause'
     - protect_data_from_gc_on_pause
     - updated
-  sql:
-    queryType:
-      none:
-        immutableColumns:
-        - name: ride_id
-          type: uuid
-        - name: timestamp
-          type: date
   elasticsearch:
     index:
         name: vehicle_location_histories
@@ -252,12 +226,6 @@ schemas:
     - on_error = 'pause'
     - protect_data_from_gc_on_pause
     - updated
-  sql:
-    queryType:
-      none:
-        immutableColumns:
-        - name: id
-          type: uuid
   elasticsearch:
     index:
       name: vehicles
@@ -322,12 +290,9 @@ schemas:
     - protect_data_from_gc_on_pause
     - updated
   sql:
-    queryType:
-      advanced:
-        immutableColumns:
-        - name: id
-          type: uuid
-        query: "SELECT rides.id,rides.city,rides.vehicle_city,rides.rider_id,rides.vehicle_id,rides.start_address,rides.end_address,rides.start_time,rides.end_time,rides.revenue,vehicles.type FROM rides LEFT JOIN vehicles ON vehicles.id = rides.vehicle_id"
+    columns:
+    - id
+    query: "SELECT rides.id,rides.city,rides.vehicle_city,rides.rider_id,rides.vehicle_id,rides.start_address,rides.end_address,rides.start_time,rides.end_time,rides.revenue,vehicles.type FROM rides LEFT JOIN vehicles ON vehicles.id = rides.vehicle_id"
   elasticsearch:
     index:
       name: rides

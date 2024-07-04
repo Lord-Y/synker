@@ -4,6 +4,7 @@ package processing
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -62,6 +63,10 @@ func createChangeFeed(changefeed models.ChangeFeed) (err error) {
 	}
 	//golangci-lint fail on this check while the transaction error is checked
 	defer tx.Rollback(ctx) //nolint
+
+	if !slices.Contains(changefeed.Options, "diff") {
+		changefeed.Options = append(changefeed.Options, "diff")
+	}
 	q := fmt.Sprintf(
 		"CREATE CHANGEFEED FOR TABLE %s INTO '%s' WITH %s",
 		changefeed.FullTableName,
