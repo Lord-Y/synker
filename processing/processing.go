@@ -134,11 +134,8 @@ func (c *Validate) parsing() (file string, err error) {
 			}
 		}
 		for _, v := range z.Schemas {
-			if reflect.ValueOf(v.SQL.QueryType).IsZero() {
-				return file, fmt.Errorf("queryType cannot be empty and must be one of advanced, none, notify")
-			}
-			if !reflect.ValueOf(v.SQL.QueryType.Advanced).IsZero() {
-				query := strings.TrimSpace(v.SQL.QueryType.Advanced.Query)
+			if !reflect.ValueOf(v.SQL).IsZero() {
+				query := strings.TrimSpace(v.SQL.Query)
 				if query != "" {
 					if !strings.Contains(query, ".") {
 						return file, fmt.Errorf("Your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b ...", query)
@@ -334,13 +331,6 @@ func (c *Validate) consume(index int, topic string) {
 	})
 	defer r.Close()
 
-	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.QueryType.None).IsZero() {
-		c.ValidatedSchemas.Schemas[index].SQL.Type = "none"
-	}
-	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.QueryType.Advanced).IsZero() {
-		c.ValidatedSchemas.Schemas[index].SQL.Type = "advanced"
-	}
-
 	ctx := context.Background()
 	for {
 		var (
@@ -395,7 +385,7 @@ func (c *Validate) consume(index int, topic string) {
 		}
 
 		if value["after"] != nil {
-			if c.ValidatedSchemas.Schemas[index].SQL.Type == "none" {
+			if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
 				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 				if err != nil {
 					log.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
@@ -417,9 +407,7 @@ func (c *Validate) consume(index int, topic string) {
 				}
 				documentIndexed = true
 				esIndex = esTargetIndex
-			}
-
-			if c.ValidatedSchemas.Schemas[index].SQL.Type == "advanced" {
+			} else {
 				t := strings.Split(c.ValidatedSchemas.Schemas[index].ChangeFeed.FullTableName, ".")
 				var v map[string]interface{}
 				err = mapstructure.Decode(value["after"], &v)
@@ -427,7 +415,7 @@ func (c *Validate) consume(index int, topic string) {
 					return
 				}
 
-				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Advanced.Query, t[len(t)-1], v)
+				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Query, t[len(t)-1], v)
 				if err != nil {
 					log.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
 					return
@@ -530,44 +518,67 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 
 	var documentToDelete bool
 	esQuery := elastic.NewBoolQuery()
-	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.None).IsZero() {
-		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.None.ImmutableColumns {
-			if value["after"] != nil {
-				var after map[string]interface{}
-				err := mapstructure.Decode(value["after"], &after)
+	if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
+		var queries []elastic.Query
+		if value["after"] != nil {
+			var before map[string]interface{}
+			if value["before"] != nil {
+				err := mapstructure.Decode(value["before"], &before)
 				if err != nil {
 					return false, "", esTargetIndex, err
 				}
-				if z, ok := after[column.Name]; ok {
-					esQuery.Must(elastic.NewMatchQuery(column.Name, z))
+				for k, v := range before {
+					queries = append(queries, elastic.NewMatchQuery(k, v))
 				}
 			} else {
-				documentToDelete = true
-				for _, v := range key {
-					esQuery.Must(elastic.NewMatchQuery(column.Name, v))
-				}
+				return
 			}
-		}
-	}
+		} else {
+			documentToDelete = true
 
-	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL.Advanced).IsZero() {
-		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.Advanced.ImmutableColumns {
+			var before map[string]interface{}
+			err := mapstructure.Decode(value["before"], &before)
+			if err != nil {
+				return false, "", esTargetIndex, err
+			}
+			for k, v := range before {
+				log.Debug().Msgf("K/V to delete %v == %v", k, v)
+				queries = append(queries, elastic.NewMatchQuery(k, v))
+			}
+		}
+		esQuery.Must(queries...)
+	} else {
+		var queries []elastic.Query
+		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.Columns {
 			if value["after"] != nil {
-				var after map[string]interface{}
-				err := mapstructure.Decode(value["after"], &after)
-				if err != nil {
-					return false, "", esTargetIndex, err
-				}
-				if z, ok := after[column.Name]; ok {
-					esQuery.Must(elastic.NewMatchQuery(column.Name, z))
+				if value["before"] != nil {
+					var before map[string]interface{}
+					err := mapstructure.Decode(value["before"], &before)
+					if err != nil {
+						return false, "", esTargetIndex, err
+					}
+					if z, ok := before[column]; ok {
+						log.Debug().Msgf("K/V to search for %v == %v", column, z)
+						queries = append(queries, elastic.NewMatchQuery(column, z))
+					}
+				} else {
+					return
 				}
 			} else {
 				documentToDelete = true
-				for _, v := range key {
-					esQuery.Must(elastic.NewMatchQuery(column.Name, v))
+
+				var before map[string]interface{}
+				err := mapstructure.Decode(value["before"], &before)
+				if err != nil {
+					return false, "", esTargetIndex, err
+				}
+				if z, ok := before[column]; ok {
+					log.Debug().Msgf("K/V to delete %v == %v", column, z)
+					queries = append(queries, elastic.NewMatchQuery(column, z))
 				}
 			}
 		}
+		esQuery.Must(queries...)
 	}
 
 	src, err := esQuery.Source()
@@ -580,7 +591,9 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 		return
 	}
 
-	log.Trace().Msgf("Elasticsearch query %s", string(data))
+	if documentToDelete {
+		log.Debug().Msgf("Elasticsearch query before document deletion %s", string(data))
+	}
 
 	result, err := client.Search().
 		Index(esTargetIndex).
@@ -622,14 +635,13 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniq
 	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	var content map[string]interface{}
-	switch c.ValidatedSchemas.Schemas[index].SQL.Type {
-	case "none":
+	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
+		content = value
+	} else {
 		err = mapstructure.Decode(value["after"], &content)
 		if err != nil {
 			return
 		}
-	case "advanced":
-		content = value
 	}
 
 	if esAlias != "" {
