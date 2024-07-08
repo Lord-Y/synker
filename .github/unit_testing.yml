@@ -1,0 +1,61 @@
+
+jobs:
+  unit-testing:
+    name: Unit testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+        - '1.22.5'
+    env:
+      COCKROACHDB_VERSION: 24.1.1
+    steps:
+    - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
+
+    - name: Set up Go environment
+      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releaseshttps://github.com/actions/setup-go/releases
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Install CockroachDB
+      run: |
+        sudo mkdir -p /usr/local/lib/cockroach
+        cd /tmp
+        wget -O /tmp/cockroach-v${COCKROACHDB_VERSION}.linux-amd64.tgz https://binaries.cockroachdb.com/cockroach-v${COCKROACHDB_VERSION}.linux-amd64.tgz
+        tar -xf cockroach-v${COCKROACHDB_VERSION}.linux-amd64.tgz
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/cockroach /usr/local/bin/cockroach
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos.so /usr/local/lib/cockroach
+        sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos_c.so /usr/local/lib/cockroach
+
+    - name: Setup sysctl
+      run: |
+        cat <<EOF | sudo tee -a /etc/sysctl.d/10-custom.conf
+        vm.max_map_count=262144
+        EOF
+        sudo sysctl -p /etc/sysctl.d/10-custom.conf
+
+    - name: Start CockroachDB demo cluster
+      run: |
+        cockroach demo movr --insecure --http-port 8090 & disown -h
+
+    - name: Start docker-compose stack
+      run: |
+        sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml up -d
+
+    - name: Run unit testing
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: .coverage/*.out
+        retention-days: 1
+      run: |
+        export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
+        export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
+        export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
+        export SYNKER_KAFKA_URI="localhost:9092"
+
+        mkdir -p .coverage/global
+        SYNKER_LOG_LEVEL=debug go test -v ./... -cover -args -test.gocoverdir=$PWD/.coverage/global
+
+        mkdir -p .coverage/os_variables
+        SYNKER_LOG_LEVEL=debug go test -v ./... -run TestMain_fail_api_os_variables -cover -args -test.gocoverdir=$PWD/.coverage/os_variables
