@@ -11,8 +11,8 @@ on:
 
 jobs:
   call-workflow-golangci:
-    uses: ./.github/workflows/jobs/golangci.yml
+    uses: ./.github/workflows/golangci.yml
   call-workflow-unit-testing:
-    uses: ./.github/workflows/jobs/unit_testing.yml
+    uses: ./.github/workflows/unit_testing.yml
   call-workflow-test-coverage:
-    uses: ./.github/workflows/jobs/coverage.yml
+    uses: ./.github/workflows/coverage.yml
