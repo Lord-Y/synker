@@ -10,7 +10,7 @@ jobs:
     - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
 
     - name: Set up Go environment
-      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releaseshttps://github.com/actions/setup-go/releases
+      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releases
       with:
         go-version: ${{ matrix.go }}
 
