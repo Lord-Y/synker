@@ -28,15 +28,15 @@ func API(c *cli.Context) (z *cli.Command) {
 		Action: func(c *cli.Context) error {
 			if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
 				msg := "SYNKER_PG_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 			if strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_URI")) == "" {
 				msg := "SYNKER_ELASTICSEARCH_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 			if strings.TrimSpace(os.Getenv("SYNKER_KAFKA_URI")) == "" {
 				msg := "SYNKER_KAFKA_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf(msg)).Msg(msg)
+				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 
 			cmdValidate.Run()

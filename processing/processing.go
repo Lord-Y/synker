@@ -402,7 +402,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				err = c.IndexNewContent(index, value, id)
 				if err != nil {
-					log.Error().Err(err).Msgf(errorMessage)
+					log.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentIndexed = true
@@ -438,7 +438,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				err = c.IndexNewContent(index, result, id)
 				if err != nil {
-					log.Error().Err(err).Msgf(errorMessage)
+					log.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentIndexed = true
@@ -471,7 +471,7 @@ func (c *Validate) consume(index int, topic string) {
 			if exist {
 				err = c.DeleteContent(index, id)
 				if err != nil {
-					log.Error().Err(err).Msgf(errorMessage)
+					log.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentDeleted = true
