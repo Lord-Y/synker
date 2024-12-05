@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         go:
-        - '1.22.5'
+        - '1.23.3'
     env:
       COCKROACHDB_VERSION: 24.1.1
     steps:
