@@ -2,12 +2,12 @@ on:
   workflow_call:
 
 name: Unit testing
-runs-on: ubuntu-latest
 env:
   COCKROACHDB_VERSION: 24.1.1
 
 jobs:
   unit-testing:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go:
