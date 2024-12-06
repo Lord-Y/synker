@@ -16,6 +16,13 @@ jobs:
         go:
         - '1.23.3'
     steps:
+    - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
+
+    - name: Set up Go environment
+      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releases
+      with:
+        go-version: ${{ matrix.go }}
+
     - uses: ./.github/workflows/golangci.yml
     - uses: ./.github/workflows/unit-testing.yml
     - uses: ./.github/workflows/coverage.yml
