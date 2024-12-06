@@ -1,3 +1,6 @@
+on:
+  workflow_call:
+
 name: Linting code
 runs-on: ubuntu-latest
 env:
