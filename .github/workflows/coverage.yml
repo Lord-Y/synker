@@ -3,13 +3,13 @@ on:
 
 name: Test coverage
 runs-on: ubuntu-latest
-strategy:
-  matrix:
-    go:
-    - '1.23.3'
 
 jobs:
-  resuable-workflow:
+  coverage:
+    strategy:
+      matrix:
+        go:
+        - '1.23.3'
     steps:
     - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
 
