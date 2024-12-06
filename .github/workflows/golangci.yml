@@ -1,29 +1,27 @@
-on:
-  workflow_call:
-
 name: Linting code
 runs-on: ubuntu-latest
 env:
   GOLANGCI_LINT_VERSION: 1.62.2
 
-jobs:
-  linging-code:
-    strategy:
-      matrix:
-        go:
-        - '1.23.3'
-    steps:
-    - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
+strategy:
+  matrix:
+    go:
+    - '1.23.3'
 
-    - name: Set up Go environment
-      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releases
-      with:
-        go-version: ${{ matrix.go }}
+runs:
+  using: composite
+  steps:
+  - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
 
-    - name: Install golangci-lint
-      run: |
-        wget -O /tmp/golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.deb
-        sudo dpkg -i /tmp/golangci-lint.deb
+  - name: Set up Go environment
+    uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releases
+    with:
+      go-version: ${{ matrix.go }}
 
-    - name: Run golangci-lint
-      run: golangci-lint run
+  - name: Install golangci-lint
+    run: |
+      wget -O /tmp/golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.deb
+      sudo dpkg -i /tmp/golangci-lint.deb
+
+  - name: Run golangci-lint
+    run: golangci-lint run
