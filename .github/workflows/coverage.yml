@@ -3,21 +3,14 @@ on:
 
 name: Test coverage
 
-jobs:
-  coverage:
-    steps:
-    - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
+runs:
+  using: composite
+  steps:
+  - name: Download all workflow artifacts
+    uses: actions/download-artifact@v4
 
-    - name: Set up Go environment
-      uses: actions/setup-go@v5 # https://github.com/actions/setup-go/releases
-      with:
-        go-version: ${{ matrix.go }}
-
-    - name: Download all workflow artifacts
-      uses: actions/download-artifact@v4
-
-    - name: Run test coverage
-      run: |
-        COVERAGE_DIR=$(find .coverage -type d |tail -n +2 | tr -s "\n" "," | sed 's#,$##g')
-        go tool covdata textfmt -i=${COVERAGE_DIR} -o=$PWD/.coverage/coverage.out
-        go tool cover -func=.coverage/coverage.out
+  - name: Run test coverage
+    run: |
+      COVERAGE_DIR=$(find .coverage -type d |tail -n +2 | tr -s "\n" "," | sed 's#,$##g')
+      go tool covdata textfmt -i=${COVERAGE_DIR} -o=$PWD/.coverage/coverage.out
+      go tool cover -func=.coverage/coverage.out
