@@ -46,11 +46,6 @@ jobs:
         sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml up -d
 
     - name: Run unit testing
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage
-        path: .coverage/*.out
-        retention-days: 1
       run: |
         export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
         export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
@@ -62,3 +57,10 @@ jobs:
 
         mkdir -p .coverage/os_variables
         SYNKER_LOG_LEVEL=debug go test -v ./... -run TestMain_fail_api_os_variables -cover -args -test.gocoverdir=$PWD/.coverage/os_variables
+
+    - name: Upload unit testing artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: .coverage/*.out
+        retention-days: 1
