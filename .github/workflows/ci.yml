@@ -9,9 +9,8 @@ on:
     - main
 
 jobs:
-  call-workflow-golangci:
-    uses: ./.github/workflows/golangci.yml
-  call-workflow-unit-testing:
-    uses: ./.github/workflows/unit-testing.yml
-  call-workflow-test-coverage:
-    uses: ./.github/workflows/coverage.yml
+  tests:
+    steps:
+    - uses: ./.github/workflows/golangci.yml
+    - uses: ./.github/workflows/unit-testing.yml
+    - uses: ./.github/workflows/coverage.yml
