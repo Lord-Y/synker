@@ -3,14 +3,14 @@ on:
 
 name: Test coverage
 
-runs:
-  using: composite
-  steps:
-  - name: Download all workflow artifacts
-    uses: actions/download-artifact@v4
+jobs:
+  coverage:
+    steps:
+    - name: Download all workflow artifacts
+      uses: actions/download-artifact@v4
 
-  - name: Run test coverage
-    run: |
-      COVERAGE_DIR=$(find .coverage -type d |tail -n +2 | tr -s "\n" "," | sed 's#,$##g')
-      go tool covdata textfmt -i=${COVERAGE_DIR} -o=$PWD/.coverage/coverage.out
-      go tool cover -func=.coverage/coverage.out
+    - name: Run test coverage
+      run: |
+        COVERAGE_DIR=$(find .coverage -type d |tail -n +2 | tr -s "\n" "," | sed 's#,$##g')
+        go tool covdata textfmt -i=${COVERAGE_DIR} -o=$PWD/.coverage/coverage.out
+        go tool cover -func=.coverage/coverage.out
