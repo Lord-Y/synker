@@ -10,7 +10,7 @@ on:
 
 jobs:
   call-workflow-golangci:
-    uses: ./.github/actions/golangci
+    uses: ./.github/workflows/golangci.yml
   call-workflow-unit-testing:
     uses: ./.github/actions/unit-testing
   call-workflow-test-coverage:
