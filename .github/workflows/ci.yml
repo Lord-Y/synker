@@ -10,6 +10,11 @@ on:
 
 jobs:
   tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+        - '1.23.3'
     steps:
     - uses: ./.github/workflows/golangci.yml
     - uses: ./.github/workflows/unit-testing.yml
