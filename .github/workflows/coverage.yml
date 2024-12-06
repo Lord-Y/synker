@@ -2,10 +2,10 @@ on:
   workflow_call:
 
 name: Test coverage
-runs-on: ubuntu-latest
 
 jobs:
   coverage:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go:

@@ -2,12 +2,12 @@ on:
   workflow_call:
 
 name: Linting code
-runs-on: ubuntu-latest
 env:
   GOLANGCI_LINT_VERSION: 1.62.2
 
 jobs:
   linging-code:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go:
