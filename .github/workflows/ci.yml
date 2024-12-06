@@ -1,7 +1,6 @@
 name: Unit testing
 
 on:
-  workflow_call:
   push:
     branches:
     - main
