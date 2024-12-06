@@ -5,13 +5,13 @@ name: Linting code
 env:
   GOLANGCI_LINT_VERSION: 1.62.2
 
-runs:
-  using: composite
-  steps:
-  - name: Install golangci-lint
-    run: |
-      wget -O /tmp/golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.deb
-      sudo dpkg -i /tmp/golangci-lint.deb
+jobs:
+  linging-code:
+    steps:
+    - name: Install golangci-lint
+      run: |
+        wget -O /tmp/golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.deb
+        sudo dpkg -i /tmp/golangci-lint.deb
 
-  - name: Run golangci-lint
-    run: golangci-lint run
+    - name: Run golangci-lint
+      run: golangci-lint run
