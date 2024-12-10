@@ -113,11 +113,11 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8082
     - --advertise-pandaproxy-addr
-    - 0.0.0.0:8082
+    - redpandac01:8082
     - --kafka-addr
     - 0.0.0.0:9092
     - --advertise-kafka-addr
-    - 0.0.0.0:9092
+    - redpandac01:9092
     - --rpc-addr
     - 0.0.0.0:33145
     - --advertise-rpc-addr
@@ -151,11 +151,11 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8083
     - --advertise-pandaproxy-addr
-    - 0.0.0.0:8083
+    - redpandac02:8083
     - --kafka-addr
     - 0.0.0.0:9093
     - --advertise-kafka-addr
-    - 0.0.0.0:9093
+    - redpandac02:9093
     - --rpc-addr
     - 0.0.0.0:33146
     - --advertise-rpc-addr
@@ -189,11 +189,11 @@ services:
     - --pandaproxy-addr
     - 0.0.0.0:8084
     - --advertise-pandaproxy-addr
-    - 0.0.0.0:8084
+    - redpandac03:8084
     - --kafka-addr
     - 0.0.0.0:9094
     - --advertise-kafka-addr
-    - 0.0.0.0:9094
+    - redpandac03:9094
     - --rpc-addr
     - 0.0.0.0:33147
     - --advertise-rpc-addr
