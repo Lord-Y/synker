@@ -60,9 +60,6 @@ jobs:
       run: |
         sudo docker compose -f docker/cockroach-demo/docker-compose.yaml up -d
         sudo docker compose -f docker/cockroach-demo/docker-compose.yaml ps
-        sudo docker logs redpandac01
-        sudo docker logs redpandac02
-        sudo docker logs redpandac03
 
     - name: Waiting for elasticsearch to be up
       run: |
