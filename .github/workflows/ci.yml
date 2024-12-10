@@ -59,6 +59,7 @@ jobs:
     - name: Start docker-compose stack
       run: |
         sudo docker compose -f docker/cockroach-demo/docker-compose.yaml up -d
+        sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml ps
 
     - name: Waiting for elasticsearch to be up
       run: |
