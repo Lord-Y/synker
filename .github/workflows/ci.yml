@@ -60,6 +60,40 @@ jobs:
       run: |
         sudo docker compose -f docker/cockroach-demo/docker-compose.yaml up -d
 
+    - name: Waiting for elasticsearch to be up
+      run: |
+        export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
+
+        attempt_counter=0
+        max_attempts=10
+
+        until $(curl --output /dev/null --silent --head --fail ${SYNKER_ELASTICSEARCH_URI}); do
+            if [ ${attempt_counter} -eq ${max_attempts} ];then
+              echo "Max attempts reached"
+              exit 1
+            fi
+
+            printf '.'
+            attempt_counter=$(($attempt_counter+1))
+            sleep 5
+        done
+
+    - name: Waiting for redpanda to be up
+      run: |
+        attempt_counter=0
+        max_attempts=10
+
+        until $(nc -vz localhost 9092 &> /dev/null); do
+            if [ ${attempt_counter} -eq ${max_attempts} ];then
+              echo "Max attempts reached"
+              exit 1
+            fi
+
+            printf '.'
+            attempt_counter=$(($attempt_counter+1))
+            sleep 5
+        done
+
     - name: Run unit testing
       run: |
         export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
