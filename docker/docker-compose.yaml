@@ -100,7 +100,7 @@ services:
     networks:
     - synker_cluster
   redpandac01:
-    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpandac01
     hostname: redpandac01
     volumes:
@@ -138,7 +138,7 @@ services:
     - --advertise-rpc-addr
     - redpandac01:33145
   redpandac02:
-    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpandac02
     hostname: redpandac02
     volumes:
@@ -176,7 +176,7 @@ services:
     - --advertise-rpc-addr
     - redpandac02:33146
   redpandac03:
-    image: docker.vectorized.io/vectorized/redpanda:v21.10.1
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpandac03
     hostname: redpandac03
     volumes:
