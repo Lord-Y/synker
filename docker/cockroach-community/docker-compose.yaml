@@ -93,35 +93,34 @@ services:
     - redpandac01:/var/lib/redpanda/data
     networks:
     - synker_cluster
-    ports:
-    - 8082:8082
-    - 9092:9092
     restart: always
+    ports:
+    - 18081:18081
+    - 18082:18082
+    - 19092:19092
+    - 19644:9644
     command:
     - redpanda
     - start
-    - --smp
-    - "1"
-    - --memory
-    - 1G
-    - --reserve-memory
-    - 0M
-    - --overprovisioned
-    - --node-id
-    - "0"
-    - --check=false
-    - --pandaproxy-addr
-    - 0.0.0.0:8082
-    - --advertise-pandaproxy-addr
-    - redpandac01:8082
-    - --kafka-addr
-    - 0.0.0.0:9092
-    - --advertise-kafka-addr
-    - redpandac01:9092
-    - --rpc-addr
-    - 0.0.0.0:33145
-    - --advertise-rpc-addr
-    - redpandac01:33145
+    - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+    # Address the broker advertises to clients that connect to the Kafka API.
+    # Use the internal addresses to connect to the Redpanda brokers'
+    # from inside the same Docker network.
+    # Use the external addresses to connect to the Redpanda brokers'
+    # from outside the Docker network.
+    - --advertise-kafka-addr internal://redpandac01:9092,external://localhost:19092
+    - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+    # Address the broker advertises to clients that connect to the HTTP Proxy.
+    - --advertise-pandaproxy-addr internal://redpandac01:8082,external://localhost:18082
+    - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+    # Redpanda brokers use the RPC API to communicate with each other internally.
+    - --rpc-addr redpandac01:33145
+    - --advertise-rpc-addr redpandac01:33145
+    # Mode dev-container uses well-known configuration properties for development in containers.
+    - --mode dev-container
+    # Tells Seastar (the framework Redpanda uses under the hood) to use 1 core on the system.
+    - --smp 1
+    - --default-log-level=info
   redpandac02:
     image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpandac02
@@ -132,34 +131,26 @@ services:
     - synker_cluster
     restart: always
     ports:
-    - 9093:9093
+    - 28081:28081
+    - 28082:28082
+    - 29092:29092
+    - 29644:9644
     command:
     - redpanda
     - start
-    - --smp
-    - "1"
-    - --memory
-    - 1G
-    - --reserve-memory
-    - 0M
-    - --overprovisioned
-    - --node-id
-    - "1"
-    - --seeds
-    - redpandac01:33145
-    - --check=false
-    - --pandaproxy-addr
-    - 0.0.0.0:8083
-    - --advertise-pandaproxy-addr
-    - redpandac02:8083
-    - --kafka-addr
-    - 0.0.0.0:9093
-    - --advertise-kafka-addr
-    - redpandac02:9093
-    - --rpc-addr
-    - 0.0.0.0:33146
-    - --advertise-rpc-addr
-    - redpandac02:33146
+    - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:29092
+    - --advertise-kafka-addr internal://redpandac02:9092,external://localhost:29092
+    - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:28082
+    - --advertise-pandaproxy-addr internal://redpandac02:8082,external://localhost:28082
+    - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:28081
+    - --rpc-addr redpandac02:33145
+    - --advertise-rpc-addr redpandac02:33145
+    - --mode dev-container
+    - --smp 1
+    - --default-log-level=info
+    - --seeds redpandac01:33145
+    depends_on:
+    - redpandac01
   redpandac03:
     image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
     container_name: redpandac03
@@ -170,34 +161,42 @@ services:
     - synker_cluster
     restart: always
     ports:
-    - 9094:9094
+    - 38081:38081
+    - 38082:38082
+    - 39092:39092
+    - 39644:9644
     command:
     - redpanda
     - start
-    - --smp
-    - "1"
-    - --memory
-    - 1G
-    - --reserve-memory
-    - 0M
-    - --overprovisioned
-    - --node-id
-    - "2"
-    - --seeds
-    - redpandac01:33145
-    - --check=false
-    - --pandaproxy-addr
-    - 0.0.0.0:8084
-    - --advertise-pandaproxy-addr
-    - redpandac03:8084
-    - --kafka-addr
-    - 0.0.0.0:9094
-    - --advertise-kafka-addr
-    - redpandac03:9094
-    - --rpc-addr
-    - 0.0.0.0:33147
-    - --advertise-rpc-addr
-    - redpandac03:33147
+    - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:39092
+    - --advertise-kafka-addr internal://redpandac03:9092,external://localhost:39092
+    - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:38082
+    - --advertise-pandaproxy-addr internal://redpandac03:8082,external://localhost:38082
+    - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:38081
+    - --rpc-addr redpandac03:33145
+    - --advertise-rpc-addr redpandac03:33145
+    - --mode dev-container
+    - --smp 1
+    - --default-log-level=info
+    - --seeds redpandac01:33145
+    depends_on:
+    - redpandac01
+  haproxy:
+    image: haproxy:2.4-bullseye
+    container_name: haproxy
+    depends_on:
+    - elasticsearchc01
+    - elasticsearchc02
+    - elasticsearchc03
+    ports:
+    - 1936:1936   # haproxy stats
+    - 9200:9200   # elasticsearch cluster
+    #- 8082:8082   # redpanda proxy
+    #- 9092:9092   # redpanda kafka
+    volumes:
+    - ./haproxy_cluster.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+    - synker_cluster
   cockroachc01:
     image: cockroachdb/cockroach:v24.1.1
     container_name: cockroachc01
@@ -273,6 +272,7 @@ services:
 
 networks:
   synker_cluster:
+    driver: bridge
 
 volumes:
   elasticsearchc01:

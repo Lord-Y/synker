@@ -84,7 +84,7 @@ jobs:
         attempt_counter=0
         max_attempts=10
 
-        until $(nc -vz localhost 9092 &> /dev/null); do
+        until $(nc -vz localhost 19092 &> /dev/null); do
             if [ ${attempt_counter} -eq ${max_attempts} ];then
               echo "Max attempts reached"
               exit 1
@@ -100,7 +100,7 @@ jobs:
         export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
         export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
         export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
-        export SYNKER_KAFKA_URI="localhost:9092"
+        export SYNKER_KAFKA_URI="localhost:19092"
 
         mkdir -p .coverage/global
         SYNKER_LOG_LEVEL=debug go test -v ./... -cover -args -test.gocoverdir=$PWD/.coverage/global

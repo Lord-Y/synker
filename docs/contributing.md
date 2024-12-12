@@ -47,7 +47,7 @@ Don't quit otherwise, this cluster will be shut down.
 export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
 export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
-export SYNKER_KAFKA_URI="localhost:9092"
+export SYNKER_KAFKA_URI="localhost:19092"
 
 go run main.go api -c processing/examples/schemas/
 ```
