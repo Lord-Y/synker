@@ -95,6 +95,7 @@ func Client() (conn *kafka.Conn, err error) {
 			DualStack: true,
 		}
 	}
+	log.Info().Msgf("Debug GetKafkaURI %s", commons.GetKafkaURI())
 	conn, err = dialer.Dial("tcp", commons.GetKafkaURI())
 
 	if err != nil {
