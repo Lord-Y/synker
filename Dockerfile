@@ -1,7 +1,7 @@
 ############################
 # STEP 1 build executable binary
 ############################
-ARG DOCKER_IMAGE_GOLANG="golang:1.23-alpine"
+ARG DOCKER_IMAGE_GOLANG="golang:1.23.3-alpine"
 FROM ${DOCKER_IMAGE_GOLANG} as builder
 # Install git + SSL ca certificates.
 # Git is required for fetching the dependencies.
