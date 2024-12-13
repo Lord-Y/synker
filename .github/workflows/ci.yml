@@ -129,6 +129,33 @@ jobs:
     - name: Run unit testing
       run: |
         cockroach demo movr --insecure --http-port 8090 & disown -h
+        attempt_counter=0
+        max_attempts=20
+
+        until $(nc -vz localhost 26257 &> /dev/null); do
+            if [ ${attempt_counter} -eq ${max_attempts} ];then
+              echo "Max attempts reached"
+              exit 1
+            fi
+
+            printf '.'
+            attempt_counter=$(($attempt_counter+1))
+            sleep 5
+        done
+
+        attempt_counter=0
+
+        until $(curl --output /dev/null --silent --head --fail http://localhost:8090/#/overview/list); do
+            if [ ${attempt_counter} -eq ${max_attempts} ];then
+              echo "Max attempts reached"
+              exit 1
+            fi
+
+            printf '.'
+            attempt_counter=$(($attempt_counter+1))
+            sleep 5
+        done
+
         export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}' | head -1)
         export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
         export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
