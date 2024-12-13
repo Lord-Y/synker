@@ -97,8 +97,10 @@ jobs:
 
     - name: Waiting for cockroach to be up
       run: |
+        which netstat || sudo apt update && sudo apt install -y net-tools && netstat -laptn |grep cockroach
+
         attempt_counter=0
-        max_attempts=10
+        max_attempts=20
 
         until $(nc -vz localhost 26257 &> /dev/null); do
             if [ ${attempt_counter} -eq ${max_attempts} ];then
