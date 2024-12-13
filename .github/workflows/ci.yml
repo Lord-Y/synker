@@ -55,6 +55,7 @@ jobs:
     - name: Start CockroachDB demo cluster
       run: |
         cockroach demo movr --insecure --http-port 8090 & disown -h
+        netstat -laptn |grep cockroach || echo -n "Not started"
 
     - name: Start docker-compose stack
       run: |
@@ -97,7 +98,7 @@ jobs:
 
     - name: Waiting for cockroach to be up
       run: |
-        which netstat || sudo apt update && sudo apt install -y net-tools && netstat -laptn |grep cockroach
+        netstat -laptn |grep cockroach || echo -n "Not started"
 
         attempt_counter=0
         max_attempts=20
