@@ -128,7 +128,7 @@ jobs:
 
     - name: Run unit testing
       run: |
-        cockroach demo movr --insecure --http-port 8090 & disown -h
+        cockroach demo movr --insecure --http-port 8090 & disown
         attempt_counter=0
         max_attempts=20
 
