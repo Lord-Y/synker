@@ -54,8 +54,7 @@ jobs:
 
     - name: Start CockroachDB demo cluster
       run: |
-        cockroach demo movr --insecure --http-port 8090 & disown -h
-        netstat -laptn |grep cockroach || echo -n "Not started"
+        cockroach demo movr --insecure --http-port 8090
 
     - name: Start docker-compose stack
       run: |
