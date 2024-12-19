@@ -121,7 +121,6 @@ jobs:
         echo "SYNKER_KAFKA_URI ${SYNKER_KAFKA_URI}"
 
         mkdir -p .coverage/global
-        go version
         SYNKER_LOG_LEVEL=debug go test -v ./... -cover -args -test.gocoverdir=$PWD/.coverage/global
 
         mkdir -p .coverage/os_variables
