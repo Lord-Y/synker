@@ -152,6 +152,9 @@ func TestProduceMessage(t *testing.T) {
 			Key:       "test",
 			Value:     "test",
 		})
+	if err != nil {
+		log.Error().Err(err).Msg("TestProduceMessage")
+	}
 	assert.Nil(err)
 }
 
