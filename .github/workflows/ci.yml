@@ -54,7 +54,7 @@ jobs:
 
     - name: Start CockroachDB single node
       run: |
-        cockroach start-single-node --insecure --background
+        cockroach start-single-node --insecure --background --http-addr 0.0.0.0:8090
         cockroach sql --insecure -e "SET CLUSTER SETTING kv.rangefeed.enabled = true;"
         cockroach workload run movr --duration=1m --init
 
