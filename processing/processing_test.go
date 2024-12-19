@@ -15,6 +15,7 @@ import (
 	"github.com/Lord-Y/synker/tools"
 	"github.com/icrowley/fake"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -272,6 +273,9 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_cre
 				"movr.public.user_promo_codes",
 			},
 		)
+		if err != nil {
+			log.Error().Err(err).Msg("TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_created")
+		}
 		assert.Nil(err)
 		client, err := elasticsearch.Client()
 		assert.Nil(err)
