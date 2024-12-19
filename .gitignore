@@ -37,3 +37,4 @@ synker_darwin*
 synker_windows*
 synker*
 **/.clusters
+cockroach-data
