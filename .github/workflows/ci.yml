@@ -70,31 +70,38 @@ jobs:
         attempt_counter=0
         max_attempts=10
 
-        until $(curl --output /dev/null --silent --head --fail ${SYNKER_ELASTICSEARCH_URI}); do
-            if [ ${attempt_counter} -eq ${max_attempts} ];then
-              echo "Max attempts reached"
-              exit 1
-            fi
+        until $(curl --output /dev/null --silent --head --fail ${SYNKER_ELASTICSEARCH_URI})
+        do
+          if [ ${attempt_counter} -eq ${max_attempts} ];then
+            echo "Max attempts reached"
+            exit 1
+          fi
 
-            printf '.'
-            attempt_counter=$(($attempt_counter+1))
-            sleep 5
+          printf '.'
+          attempt_counter=$(($attempt_counter+1))
+          sleep 5
         done
 
     - name: Waiting for redpanda to be up
       run: |
+        export SYNKER_KAFKA_URI="localhost:19092"
+        # this is to find the correct controller for this cluster
+        export SYNKER_KAFKA_PORT=$(rpk cluster metadata --brokers $SYNKER_KAFKA_URI |grep '*' | awk '{print $NF}')
+        export SYNKER_KAFKA_URI="localhost:${SYNKER_KAFKA_PORT}"
+        echo "SYNKER_KAFKA_URI ${SYNKER_KAFKA_URI}"
         attempt_counter=0
         max_attempts=10
 
-        until $(nc -vz localhost 19092 &> /dev/null); do
-            if [ ${attempt_counter} -eq ${max_attempts} ];then
-              echo "Max attempts reached"
-              exit 1
-            fi
+        until $(nc -vz localhost ${SYNKER_KAFKA_PORT} &> /dev/null)
+        do
+          if [ ${attempt_counter} -eq ${max_attempts} ];then
+            echo "Max attempts reached"
+            exit 1
+          fi
 
-            printf '.'
-            attempt_counter=$(($attempt_counter+1))
-            sleep 5
+          printf '.'
+          attempt_counter=$(($attempt_counter+1))
+          sleep 5
         done
 
     - name: Run unit testing
@@ -103,7 +110,8 @@ jobs:
         export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
         export SYNKER_KAFKA_URI="localhost:19092"
         # this is to find the correct controller for this cluster
-        export SYNKER_KAFKA_URI="localhost:$(rpk cluster metadata --brokers $SYNKER_KAFKA_URI |grep '*' | awk '{print $NF}')"
+        export SYNKER_KAFKA_URI="localhost:$(rpk cluster metadata --brokers ${SYNKER_KAFKA_URI} |grep '*' | awk '{print $NF}')"
+        echo "SYNKER_KAFKA_URI ${SYNKER_KAFKA_URI}"
 
         mkdir -p .coverage/global
         SYNKER_LOG_LEVEL=debug go test -v ./... -cover -args -test.gocoverdir=$PWD/.coverage/global
