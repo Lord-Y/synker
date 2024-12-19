@@ -56,6 +56,10 @@ jobs:
       run: |
         cat <<EOF | sudo tee -a /etc/sysctl.d/10-custom.conf
         vm.max_map_count=262144
+        net.ipv6.conf.all.disable_ipv6=1
+        net.ipv6.conf.default.disable_ipv6=1
+        net.ipv6.conf.lo.disable_ipv6=1
+        net.ipv6.conf.tun0.disable_ipv6=1
         EOF
         sudo sysctl -p /etc/sysctl.d/10-custom.conf
 
@@ -91,10 +95,10 @@ jobs:
 
     - name: Waiting for redpanda to be up
       run: |
-        export SYNKER_KAFKA_URI="localhost:19092"
+        export SYNKER_KAFKA_URI="127.0.0.1:19092"
         # this is to find the correct controller for this cluster
         export SYNKER_KAFKA_PORT=$(rpk cluster metadata --brokers $SYNKER_KAFKA_URI |grep '*' | awk '{print $NF}')
-        export SYNKER_KAFKA_URI="localhost:${SYNKER_KAFKA_PORT}"
+        export SYNKER_KAFKA_URI="127.0.0.1:${SYNKER_KAFKA_PORT}"
         echo "SYNKER_KAFKA_URI ${SYNKER_KAFKA_URI}"
         attempt_counter=0
         max_attempts=10
@@ -115,9 +119,9 @@ jobs:
       run: |
         export SYNKER_PG_URI="postgres://root:@127.0.0.1:26257/movr?sslmode=disable"
         export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
-        export SYNKER_KAFKA_URI="localhost:19092"
+        export SYNKER_KAFKA_URI="127.0.0.1:19092"
         # this is to find the correct controller for this cluster
-        export SYNKER_KAFKA_URI="localhost:$(rpk cluster metadata --brokers ${SYNKER_KAFKA_URI} |grep '*' | awk '{print $NF}')"
+        export SYNKER_KAFKA_URI="127.0.0.1:$(rpk cluster metadata --brokers ${SYNKER_KAFKA_URI} |grep '*' | awk '{print $NF}')"
         echo "SYNKER_KAFKA_URI ${SYNKER_KAFKA_URI}"
 
         mkdir -p .coverage/global
