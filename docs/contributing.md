@@ -48,6 +48,8 @@ export COCKROACH_HOST=$(netstat -latn |grep 26257 |grep LISTEN |awk '{print $4}'
 export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
 export SYNKER_KAFKA_URI="localhost:19092"
+# this is to find the correct controller for this cluster
+export SYNKER_KAFKA_URI="localhost:$(rpk cluster metadata --brokers $${SYNKER_KAFKA_URI} |grep '*' | awk '{print $NF}')"
 
 go run main.go api -c processing/examples/schemas/
 ```
