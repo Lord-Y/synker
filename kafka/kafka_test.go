@@ -10,6 +10,7 @@ import (
 	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tls"
 	"github.com/jackc/fake"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -195,5 +196,8 @@ func TestDeleteTopics(t *testing.T) {
 			test_create_topic,
 		},
 	)
+	if err != nil {
+		log.Error().Err(err).Msg("TestDeleteTopics")
+	}
 	assert.Nil(err)
 }
