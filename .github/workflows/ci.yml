@@ -18,6 +18,7 @@ jobs:
     env:
       GOLANGCI_LINT_VERSION: 1.62.2
       COCKROACHDB_VERSION: 24.3.1
+      REDPANDA_RPK_VERSION: 24.3.2
 
     steps:
     - uses: actions/checkout@v4 # https://github.com/actions/checkout/releases
@@ -44,6 +45,12 @@ jobs:
         sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/cockroach /usr/local/bin/cockroach
         sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos.so /usr/local/lib/cockroach
         sudo mv cockroach-v${COCKROACHDB_VERSION}.linux-amd64/lib/libgeos_c.so /usr/local/lib/cockroach
+
+    - name: Install redpanda rpk
+      run: |
+        cd /tmp
+        wget -O /tmp/rpk-linux-amd64.zip https://github.com/redpanda-data/redpanda/releases/download/v${REDPANDA_RPK_VERSION}/rpk-linux-amd64.zip
+        sudo unzip rpk-linux-amd64.zip -d /usr/local/bin
 
     - name: Setup sysctl
       run: |
