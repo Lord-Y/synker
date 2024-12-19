@@ -100,5 +100,5 @@ sudo docker-compose down -v && sleep 5 && sudo docker-compose up -d && watch cur
 for i in $(curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty" | grep -v geoip_databases |awk '{print $3}'); do curl -XDELETE ${SYNKER_ELASTICSEARCH_URI}/$i;done
 
 # topics
-rpk topic delete -r '.*'
+rpk topic delete --brokers ${SYNKER_KAFKA_URI} -r '.*'
 ```
