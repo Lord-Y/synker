@@ -11,11 +11,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// API command options
-func API(c *cli.Context) (z *cli.Command) {
+// Init command options
+func Init(c *cli.Context) (z *cli.Command) {
 	return &cli.Command{
-		Name:  "api",
-		Usage: "Start api server",
+		Name:  "init",
+		Usage: "Perform prerequisites related to elasticsearch / kafka / cockroachdb",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "config-dir",
@@ -23,13 +23,6 @@ func API(c *cli.Context) (z *cli.Command) {
 				Usage:       "Config dir name holding files",
 				Required:    true,
 				Destination: &cmdValidate.ConfigDir,
-			},
-			&cli.BoolFlag{
-				Name:        "init",
-				Aliases:     []string{"i"},
-				Usage:       "Perform prerequisites related to elasticsearch / kafka / cockroachdb",
-				Required:    false,
-				Destination: &cmdValidate.Init,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -47,7 +40,7 @@ func API(c *cli.Context) (z *cli.Command) {
 			}
 
 			cmdValidate.Run()
-			cmdAPI.Run(&cmdValidate)
+			cmdAPI.RunPrerequisitesOnly(&cmdValidate)
 			return nil
 		},
 	}

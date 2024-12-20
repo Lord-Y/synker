@@ -76,10 +76,9 @@ func (c *API) Run(validated *processing.Validate) {
 	log.Info().Msg("API server exited successfully")
 }
 
-// runPrerequisitesAndStartProcessing permit to run all functions
+// RunPrerequisitesOnly permit to run all functions
 // related to Kafka, elasticsearch and cockroach feeds
-// and then start processing all kafka messages
-func (c *API) runPrerequisitesAndStartProcessing(validated *processing.Validate) {
+func (c *API) RunPrerequisitesOnly(validated *processing.Validate) {
 	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
@@ -98,6 +97,17 @@ func (c *API) runPrerequisitesAndStartProcessing(validated *processing.Validate)
 		log.Fatal().Err(err).Msg("Fail to manage changefeed")
 		return
 	}
+}
 
+// runPrerequisitesAndStartProcessing permit to run all functions
+// related to Kafka, elasticsearch and cockroach feeds
+// and then start processing all kafka messages
+func (c *API) runPrerequisitesAndStartProcessing(validated *processing.Validate) {
+	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
+	defer os.Unsetenv("SYNKER_CONFIG_DIR")
+
+	if c.Init {
+		c.RunPrerequisitesOnly(validated)
+	}
 	validated.Processing()
 }
