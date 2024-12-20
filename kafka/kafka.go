@@ -104,18 +104,12 @@ func Client() (conn *kafka.Conn, err error) {
 	return
 }
 
-// CreateTopic permit to create a topic
-func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
-	defer conn.Close()
+func connectToController(conn *kafka.Conn) (connLeader *kafka.Conn, err error) {
 	controller, err := conn.Controller()
 	if err != nil {
 		return
 	}
 
-	var (
-		connLeader  *kafka.Conn
-		topicConfig []kafka.ConfigEntry
-	)
 	connLeader, err = kafka.Dial(
 		"tcp",
 		net.JoinHostPort(
@@ -126,7 +120,19 @@ func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
 	if err != nil {
 		return
 	}
+	return
+}
+
+// CreateTopic permit to create a topic
+func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
+	defer conn.Close()
+	connLeader, err := connectToController(conn)
+	if err != nil {
+		return
+	}
 	defer connLeader.Close()
+
+	var topicConfig []kafka.ConfigEntry
 	if len(kf.TopicConfig) > 0 {
 		for _, v := range kf.TopicConfig {
 			topicConfig = append(
@@ -158,8 +164,13 @@ func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
 // ListTopics permit to list all topics
 func ListTopics(conn *kafka.Conn) (topics []string, err error) {
 	defer conn.Close()
+	connLeader, err := connectToController(conn)
+	if err != nil {
+		return
+	}
+	defer connLeader.Close()
 
-	partitions, err := conn.ReadPartitions()
+	partitions, err := connLeader.ReadPartitions()
 	if err != nil {
 		return
 	}
@@ -177,16 +188,26 @@ func ListTopics(conn *kafka.Conn) (topics []string, err error) {
 // DeleteTopics permit to delete topics
 func DeleteTopics(conn *kafka.Conn, topics []string) (err error) {
 	defer conn.Close()
+	connLeader, err := connectToController(conn)
+	if err != nil {
+		return
+	}
+	defer connLeader.Close()
 
-	err = conn.DeleteTopics(topics...)
+	err = connLeader.DeleteTopics(topics...)
 	return
 }
 
 // ProduceMessage permit to write a message into specified topic
 func ProduceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err error) {
 	defer conn.Close()
+	connLeader, err := connectToController(conn)
+	if err != nil {
+		return
+	}
+	defer connLeader.Close()
 
-	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	err = connLeader.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
 		return
 	}
@@ -225,9 +246,15 @@ func ProduceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err err
 // and will be used for unit testing only
 func consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (err error) {
 	defer conn.Close()
+	connLeader, err := connectToController(conn)
+	if err != nil {
+		return
+	}
+	defer connLeader.Close()
+
 	brokers := []string{
-		conn.Broker().Host,
-		strconv.Itoa(conn.Broker().Port),
+		connLeader.Broker().Host,
+		strconv.Itoa(connLeader.Broker().Port),
 	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
