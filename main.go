@@ -15,6 +15,7 @@ var (
 	VersionDetails *cli.Command
 	CmdValidate    *cli.Command
 	CmdAPI         *cli.Command
+	CmdInit        *cli.Command
 )
 
 func init() {
@@ -25,6 +26,7 @@ func init() {
 	CmdValidate = cmd.Validate(&cli.Context{})
 	VersionDetails = cmd.VersionDetails(&cli.Context{})
 	CmdAPI = cmd.API(&cli.Context{})
+	CmdInit = cmd.Init(&cli.Context{})
 }
 
 func main() {
@@ -38,6 +40,7 @@ func main() {
 	app.Commands = []*cli.Command{
 		VersionDetails,
 		CmdValidate,
+		CmdInit,
 		CmdAPI,
 	}
 

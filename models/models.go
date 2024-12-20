@@ -13,6 +13,8 @@ type Configuration struct {
 	ValidatedFiles []ValidatedFiles
 	// List of validated schemas
 	ValidatedSchemas Schemas
+	// Init will only perform prerequisites related to elasticsearch / kafka / cockroachdb
+	Init bool
 }
 
 // List of validated files with SQL queries

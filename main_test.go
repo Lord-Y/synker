@@ -39,6 +39,35 @@ func TestMain(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
+func TestMain_init(t *testing.T) {
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt)
+
+	go func() {
+		<-sigc
+		os.Args = []string{
+			"synker",
+			"init",
+			"-c",
+			"processing/examples/schemas",
+		}
+		main()
+		signal.Stop(sigc)
+	}()
+	time.Sleep(1 * time.Minute)
+
+	err = proc.Signal(os.Interrupt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1 * time.Second)
+}
+
 func TestMain_api(t *testing.T) {
 	proc, err := os.FindProcess(os.Getpid())
 	if err != nil {
@@ -55,6 +84,36 @@ func TestMain_api(t *testing.T) {
 			"api",
 			"-c",
 			"processing/examples/schemas",
+		}
+		main()
+		signal.Stop(sigc)
+	}()
+	time.Sleep(1 * time.Minute)
+
+	err = proc.Signal(os.Interrupt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1 * time.Second)
+}
+
+func TestMain_api_init(t *testing.T) {
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt)
+
+	go func() {
+		<-sigc
+		os.Args = []string{
+			"synker",
+			"api",
+			"-c",
+			"processing/examples/schemas",
+			"-i",
 		}
 		main()
 		signal.Stop(sigc)
