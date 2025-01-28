@@ -6,7 +6,6 @@ import (
 
 	"github.com/Lord-Y/synker/cmd"
 	"github.com/Lord-Y/synker/logger"
-	"github.com/rs/zerolog/log"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -19,10 +18,6 @@ var (
 )
 
 func init() {
-	os.Setenv("SYNKER_BATCH_LOG", "true")
-	defer os.Unsetenv("APP_BATCH_LOG")
-	logger.SetLoggerLogLevel()
-
 	CmdValidate = cmd.Validate(&cli.Context{})
 	VersionDetails = cmd.VersionDetails(&cli.Context{})
 	CmdAPI = cmd.API(&cli.Context{})
@@ -46,7 +41,7 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		if !strings.Contains(err.Error(), "Required flag") {
-			log.Error().Err(err).Msg("Error occured while executing the program")
+			logger.NewLogger().Error().Err(err).Msg("Error occured while executing the program")
 		}
 		os.Exit(1)
 	}

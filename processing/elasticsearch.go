@@ -1,5 +1,5 @@
-// Package elasticsearch permit to push or delete all datas from db to elasticsearch
-package elasticsearch
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"context"
@@ -7,11 +7,10 @@ import (
 
 	"github.com/Lord-Y/synker/commons"
 	"github.com/olivere/elastic/v7"
-	"github.com/rs/zerolog/log"
 )
 
-// Ping permit to get elasticsearch status
-func Ping() (b bool) {
+// ePing permit to get elasticsearch status
+func (c *Validate) ePing() (b bool) {
 	var (
 		code   int
 		client *elastic.Client
@@ -19,20 +18,20 @@ func Ping() (b bool) {
 	)
 	client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()), elastic.SetGzip(true))
 	if err != nil {
-		log.Error().Err(err).Msg("Error occured while creating ES client")
+		c.Logger.Error().Err(err).Msg("Error occured while creating ES client")
 		return
 	}
 	defer client.Stop()
 	_, code, err = client.Ping(commons.GetElasticsearchURI()).HttpHeadOnly(true).Do(context.TODO())
 	if code != http.StatusOK || err != nil {
-		log.Error().Err(err).Msgf("Error occured while pinging ES http status %d", code)
+		c.Logger.Error().Err(err).Msgf("Error occured while pinging ES http status %d", code)
 		return
 	}
 	return true
 }
 
-// Client permit to create client connection to elasticsearch
-func Client() (client *elastic.Client, err error) {
+// eClient permit to create client connection to elasticsearch
+func (c *Validate) eClient() (client *elastic.Client, err error) {
 	client, err = elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(commons.GetElasticsearchURI()), elastic.SetGzip(true))
 	if err != nil {
 		return
@@ -40,8 +39,8 @@ func Client() (client *elastic.Client, err error) {
 	return
 }
 
-// IndexAlreadyExist permit to check if elasticsearch index already exist
-func IndexAlreadyExist(client *elastic.Client, index string) (b bool, err error) {
+// indexAlreadyExist permit to check if elasticsearch index already exist
+func (c *Validate) indexAlreadyExist(client *elastic.Client, index string) (b bool, err error) {
 	defer client.Stop()
 
 	ctx := context.Background()
@@ -53,7 +52,7 @@ func IndexAlreadyExist(client *elastic.Client, index string) (b bool, err error)
 }
 
 // createIndex permit to create elasticsearch index with mapping provided
-func createIndex(client *elastic.Client, index string, mapping string) (b bool, err error) {
+func (c *Validate) createIndex(client *elastic.Client, index string, mapping string) (b bool, err error) {
 	defer client.Stop()
 
 	ctx := context.Background()
@@ -73,8 +72,8 @@ func createIndex(client *elastic.Client, index string, mapping string) (b bool, 
 	return true, nil
 }
 
-// DeleteIndex permit to delete elasticsearch index provided
-func DeleteIndex(client *elastic.Client, index string) (b bool, err error) {
+// deleteIndex permit to delete elasticsearch index provided
+func (c *Validate) deleteIndex(client *elastic.Client, index string) (b bool, err error) {
 	defer client.Stop()
 	ctx := context.Background()
 

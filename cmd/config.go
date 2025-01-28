@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/Lord-Y/synker/logger"
 	"github.com/urfave/cli/v2"
 )
 
@@ -19,7 +20,8 @@ func Validate(c *cli.Context) (z *cli.Command) {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			cmdValidate.Run()
+			cmdValidate.Logger = logger.NewLogger()
+			cmdValidate.ParseAndValidateConfig()
 			return nil
 		},
 	}

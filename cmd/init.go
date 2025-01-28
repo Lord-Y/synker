@@ -6,8 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
+	"github.com/Lord-Y/synker/logger"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,21 +25,23 @@ func Init(c *cli.Context) (z *cli.Command) {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			cmdValidate.Logger = logger.NewLogger()
+
 			if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
 				msg := "SYNKER_PG_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
+				cmdValidate.Logger.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 			if strings.TrimSpace(os.Getenv("SYNKER_ELASTICSEARCH_URI")) == "" {
 				msg := "SYNKER_ELASTICSEARCH_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
+				cmdValidate.Logger.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 			if strings.TrimSpace(os.Getenv("SYNKER_KAFKA_URI")) == "" {
 				msg := "SYNKER_KAFKA_URI environment variable must be set"
-				log.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
+				cmdValidate.Logger.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 
-			cmdValidate.Run()
-			cmdAPI.RunPrerequisitesOnly(&cmdValidate)
+			cmdValidate.ParseAndValidateConfig()
+			cmdValidate.RunPrerequisitesOnly()
 			return nil
 		},
 	}

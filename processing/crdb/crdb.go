@@ -4,15 +4,15 @@ package crdb
 import (
 	"io"
 
+	"github.com/Lord-Y/synker/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 func Trigger(c *gin.Context) {
 	var body []byte
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Error().Err(err).Msg("blooooo")
+		logger.NewLogger().Error().Err(err).Msg("blooooo")
 	}
-	log.Info().Msgf("resp method %s content %+v", c.Request.Method, string(body))
+	logger.NewLogger().Info().Msgf("resp method %s content %+v", c.Request.Method, string(body))
 }

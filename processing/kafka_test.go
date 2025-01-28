@@ -1,5 +1,5 @@
-// Kafka package will handle all kafka requirements
-package kafka
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"os"
@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tls"
 	"github.com/jackc/fake"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,15 +18,19 @@ var (
 	test_create_topic string = "test_create_topic"
 )
 
-func TestClient(t *testing.T) {
+func TestKafkaClient(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	_, err := Client()
+	_, err := c.kClient()
 	assert.Nil(err)
 }
 
-func TestClient_tls_bad(t *testing.T) {
+func TestKafkaClient_tls_bad(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
 	ca, err := os.CreateTemp(os.TempDir(), fake.CharactersN(5))
 	if err != nil {
@@ -82,12 +86,14 @@ func TestClient_tls_bad(t *testing.T) {
 	defer os.Unsetenv("SYNKER_KAFKA_CACERT")
 	defer os.Unsetenv("SYNKER_KAFKA_CERT")
 	defer os.Unsetenv("SYNKER_KAFKA_KEY")
-	_, err = Client()
+	_, err = c.kClient()
 	assert.Error(err)
 }
 
-func TestClient_scram_fail(t *testing.T) {
+func TestKafkaClient_scram_fail(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
 	os.Setenv("SYNKER_KAFKA_SCRAM", "youhou")
 	os.Setenv("SYNKER_KAFKA_USER", "youhou")
@@ -95,27 +101,31 @@ func TestClient_scram_fail(t *testing.T) {
 	defer os.Unsetenv("SYNKER_KAFKA_SCRAM")
 	defer os.Unsetenv("SYNKER_KAFKA_USER")
 	defer os.Unsetenv("SYNKER_KAFKA_PASSWORD")
-	_, err := Client()
+	_, err := c.kClient()
 	assert.Error(err)
 }
 
-func TestClient_scram_empty(t *testing.T) {
+func TestKafkaClient_scram_empty(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
 	os.Setenv("SYNKER_KAFKA_USER", "youhou")
 	os.Setenv("SYNKER_KAFKA_PASSWORD", "youhou")
 	defer os.Unsetenv("SYNKER_KAFKA_USER")
 	defer os.Unsetenv("SYNKER_KAFKA_PASSWORD")
-	_, err := Client()
+	_, err := c.kClient()
 	assert.Error(err)
 }
 
 func TestCreateTopic(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	err = CreateTopic(
+	err = c.createTopic(
 		conn,
 		models.CreateTopic{
 			Name:              test_create_topic,
@@ -131,21 +141,25 @@ func TestCreateTopic(t *testing.T) {
 	assert.Nil(err)
 }
 
-func TestListTopics(t *testing.T) {
+func TestKafkaListTopics(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	_, err = ListTopics(conn)
+	_, err = c.listTopics(conn)
 	assert.Nil(err)
 }
 
-func TestProduceMessage(t *testing.T) {
+func TestKafkaProduceMessage(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	err = ProduceMessage(
+	err = c.produceMessage(
 		conn,
 		models.KafkaWriteMessage{
 			TopicName: test_create_topic,
@@ -153,15 +167,17 @@ func TestProduceMessage(t *testing.T) {
 			Value:     "test",
 		})
 	if err != nil {
-		log.Error().Err(err).Msg("TestProduceMessage")
+		c.Logger.Error().Err(err).Msg("TestProduceMessage")
 	}
 	assert.Nil(err)
 }
 
-func TestConsumeMessage(t *testing.T) {
+func TestKafkaConsumeMessage(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
 
 	proc, err := os.FindProcess(os.Getpid())
@@ -173,7 +189,7 @@ func TestConsumeMessage(t *testing.T) {
 	signal.Notify(sigc, os.Interrupt)
 
 	go func() {
-		err = consumeMessage(
+		err = c.consumeMessage(
 			conn,
 			"test",
 			test_create_topic,
@@ -188,19 +204,21 @@ func TestConsumeMessage(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
-func TestDeleteTopics(t *testing.T) {
+func TestKafkaDeleteTopics(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	err = DeleteTopics(
+	err = c.deleteTopics(
 		conn,
 		[]string{
 			test_create_topic,
 		},
 	)
 	if err != nil {
-		log.Error().Err(err).Msg("TestDeleteTopics")
+		c.Logger.Error().Err(err).Msg("TestDeleteTopics")
 	}
 	assert.Nil(err)
 }

@@ -1,7 +1,11 @@
 // Package models assemble all structs, interface e.g ...
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/rs/zerolog"
+)
 
 // Configuration reference all requirements relation to the file config
 type Configuration struct {
@@ -15,6 +19,8 @@ type Configuration struct {
 	ValidatedSchemas Schemas
 	// Init will only perform prerequisites related to elasticsearch / kafka / cockroachdb
 	Init bool
+	// Logger expose zerolog so it can be override
+	Logger *zerolog.Logger
 }
 
 // List of validated files with SQL queries

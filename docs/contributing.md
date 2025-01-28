@@ -49,7 +49,7 @@ export SYNKER_PG_URI="postgres://root:@${COCKROACH_HOST}/movr?sslmode=disable"
 export SYNKER_ELASTICSEARCH_URI="http://127.0.0.1:9200"
 export SYNKER_KAFKA_URI="localhost:19092"
 
-go run main.go api -c processing/examples/schemas/
+go run main.go api -i -c processing/examples/schemas/
 ```
 
 ## Execute workload against the stack
@@ -77,7 +77,7 @@ go tool cover -func=coverage.out
 
 Watching what's in the queue `promo_codes`:
 ```bash
-rpk topic consume movr.public.promo_codes
+rpk topic consume movr.public.promo_codes --brokers ${SYNKER_KAFKA_URI}
 ```
 
 Watching what's in `elasticsearch`:

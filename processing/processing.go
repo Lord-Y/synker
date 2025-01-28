@@ -15,16 +15,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Lord-Y/synker/elasticsearch"
-	"github.com/Lord-Y/synker/kafka"
-	"github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tools"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/olivere/elastic/v7"
-	"github.com/rs/zerolog/log"
 	kafkago "github.com/segmentio/kafka-go"
 	"gopkg.in/yaml.v3"
 )
@@ -41,14 +37,8 @@ var (
 	validate *validator.Validate
 )
 
-func init() {
-	os.Setenv("SYNKER_BATCH_LOG", "true")
-	defer os.Unsetenv("APP_BATCH_LOG")
-	logger.SetLoggerLogLevel()
-}
-
-// Run will validate the files configurations
-func (c *Validate) Run() {
+// ParseAndValidateConfig will validate the files configurations
+func (c *Validate) ParseAndValidateConfig() {
 	var files []string
 	err := filepath.WalkDir(
 		c.ConfigDir,
@@ -63,23 +53,23 @@ func (c *Validate) Run() {
 		},
 	)
 	if err != nil {
-		log.Fatal().Err(err).Msgf("Fail to walk into directory %s", c.ConfigDir)
+		c.Logger.Fatal().Err(err).Msgf("Fail to walk into directory %s", c.ConfigDir)
 		return
 	}
 	if len(files) == 0 {
-		log.Fatal().Msg("No config files found to validate")
+		c.Logger.Fatal().Msg("No config files found to validate")
 		return
 	}
 	c.Files = files
 	z, err := c.parsing()
 	if err != nil {
-		log.Fatal().Err(err).Msgf("File %s is invalid", z)
+		c.Logger.Fatal().Err(err).Msgf("File %s is invalid", z)
 	}
 	for _, v := range c.ValidatedFiles {
-		log.Info().Msgf("Config file %s is valid", v.File)
+		c.Logger.Info().Msgf("Config file %s is valid", v.File)
 		if len(v.Queries) > 0 {
 			for _, query := range v.Queries {
-				log.Info().Msgf("SQL query that will be executed: %s", query)
+				c.Logger.Info().Msgf("SQL query that will be executed: %s", query)
 			}
 		}
 	}
@@ -163,23 +153,23 @@ func (c *Validate) parsing() (file string, err error) {
 
 // ManageTopics permit to create or update topics
 func (c *Validate) ManageTopics() (err error) {
-	ls, err := kafka.Client()
+	ls, err := c.kClient()
 	if err != nil {
 		return err
 	}
 
-	topics, err := kafka.ListTopics(ls)
+	topics, err := c.listTopics(ls)
 	if err != nil {
 		return err
 	}
 
 	for _, v := range c.ValidatedSchemas.Schemas {
 		if !tools.InSlice(v.Topic.Name, topics) {
-			client, err := kafka.Client()
+			client, err := c.kClient()
 			if err != nil {
 				return err
 			}
-			err = kafka.CreateTopic(
+			err = c.createTopic(
 				client,
 				models.CreateTopic{
 					Name:              v.Topic.Name,
@@ -197,7 +187,7 @@ func (c *Validate) ManageTopics() (err error) {
 
 // ManageElasticsearchIndex permit to check or create elasticsearch index
 func (c *Validate) ManageElasticsearchIndex() (err error) {
-	client, err := elasticsearch.Client()
+	client, err := c.eClient()
 	if err != nil {
 		return err
 	}
@@ -281,12 +271,12 @@ func (c *Validate) ManageChangeFeed() (err error) {
 	for _, v := range c.ValidatedSchemas.Schemas {
 		count, err := countChangeFeed(v.ChangeFeed.FullTableName, "running")
 		if err != nil {
-			log.Fatal().Err(err).Msgf("Fail to check if required changefeed %s on schema %s has status running", v.ChangeFeed.FullTableName, v.Name)
+			c.Logger.Fatal().Err(err).Msgf("Fail to check if required changefeed %s on schema %s has status running", v.ChangeFeed.FullTableName, v.Name)
 		}
 		if count == 0 {
 			err = createChangeFeed(v.ChangeFeed)
 			if err != nil {
-				log.Fatal().Err(err).Msgf("Fail to create changefeed %s on schema %s", v.ChangeFeed.FullTableName, v.Name)
+				c.Logger.Fatal().Err(err).Msgf("Fail to create changefeed %s on schema %s", v.ChangeFeed.FullTableName, v.Name)
 			}
 		}
 	}
@@ -301,7 +291,7 @@ func (c *Validate) Processing() {
 		wg.Add(1)
 		topic := v.Topic.Name
 		k := k
-		log.Debug().Msgf("Start processing on topic %s", topic)
+		c.Logger.Debug().Msgf("Start processing on topic %s", topic)
 		go func() {
 			defer wg.Done()
 			c.consume(k, topic)
@@ -312,16 +302,16 @@ func (c *Validate) Processing() {
 
 // consume permit to consume messages in kafka and sent it to elasticsearch
 func (c *Validate) consume(index int, topic string) {
-	conn, err := kafka.Client()
+	conn, err := c.kClient()
 	if err != nil {
 		return
 	}
 	defer conn.Close()
 
 	brokers := []string{
-		conn.Broker().Host,
-		strconv.Itoa(conn.Broker().Port),
+		conn.Broker().Host + ":" + strconv.Itoa(conn.Broker().Port),
 	}
+
 	r := kafkago.NewReader(kafkago.ReaderConfig{
 		Brokers:  brokers,
 		Topic:    topic,
@@ -344,43 +334,43 @@ func (c *Validate) consume(index int, topic string) {
 
 		m, err := r.FetchMessage(ctx)
 		if err != nil {
-			break
+			c.Logger.Fatal().Err(err).Msgf("Fail to fetch kafka message from topic %s on partition %d and offset %d", topic, m.Partition, m.Offset)
 		}
 
-		log.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		c.Logger.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		mjson, err := json.Marshal(m)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to marshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to marshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mjson, &message)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to unmarshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		mkBytes, err = base64.StdEncoding.DecodeString(message.Key)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mkBytes, &key)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to unmarshall field key from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshall field key from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		mvBytes, err = base64.StdEncoding.DecodeString(message.Value)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mvBytes, &value)
 		if err != nil {
-			log.Error().Err(err).Msgf("Fail to unmarshall field value from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshall field value from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
@@ -388,11 +378,11 @@ func (c *Validate) consume(index int, topic string) {
 			if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
 				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 				if err != nil {
-					log.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
+					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
 
-				log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
+				c.Logger.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
 				var errorMessage string
 				if exist {
 					errorMessage = fmt.Sprintf("Fail to index kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
@@ -402,7 +392,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				err = c.IndexNewContent(index, value, id)
 				if err != nil {
-					log.Error().Err(err).Msgf("%s", errorMessage)
+					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentIndexed = true
@@ -417,18 +407,18 @@ func (c *Validate) consume(index int, topic string) {
 
 				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Query, t[len(t)-1], v)
 				if err != nil {
-					log.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
+					c.Logger.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
 					return
 				}
 
-				log.Debug().Msgf("result %s query %s", result, select_query)
+				c.Logger.Debug().Msgf("result %s query %s", result, select_query)
 				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 				if err != nil {
-					log.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
+					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
 
-				log.Debug().Msgf("Data exist in elasticsearch? %t", exist)
+				c.Logger.Debug().Msgf("Data exist in elasticsearch? %t", exist)
 				var errorMessage string
 				if exist {
 					errorMessage = fmt.Sprintf("Fail to index kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
@@ -438,7 +428,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				err = c.IndexNewContent(index, result, id)
 				if err != nil {
-					log.Error().Err(err).Msgf("%s", errorMessage)
+					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentIndexed = true
@@ -446,21 +436,21 @@ func (c *Validate) consume(index int, topic string) {
 			}
 
 			if documentIndexed {
-				log.Debug().Msgf("Kafka message has been indexed into elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
+				c.Logger.Debug().Msgf("Kafka message has been indexed into elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 				if err := r.CommitMessages(ctx, m); err != nil {
-					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					c.Logger.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}
-				log.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				c.Logger.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			}
 		} else {
 			exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
 			if err != nil {
-				log.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
+				c.Logger.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
 				return
 			}
 
-			log.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
+			c.Logger.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
 			var errorMessage string
 			if exist {
 				errorMessage = fmt.Sprintf("Fail to delete kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
@@ -471,7 +461,7 @@ func (c *Validate) consume(index int, topic string) {
 			if exist {
 				err = c.DeleteContent(index, id)
 				if err != nil {
-					log.Error().Err(err).Msgf("%s", errorMessage)
+					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
 				documentDeleted = true
@@ -479,12 +469,12 @@ func (c *Validate) consume(index int, topic string) {
 			}
 
 			if documentDeleted {
-				log.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
+				c.Logger.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 				if err := r.CommitMessages(ctx, m); err != nil {
-					log.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+					c.Logger.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}
-				log.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+				c.Logger.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			}
 		}
 	}
@@ -495,7 +485,7 @@ func (c *Validate) consume(index int, topic string) {
 // if it exist, it will return the elasticsearch id
 // if it exist multiple times, an error will be returned
 func (c *Validate) SearchByVersion(index int, key []string, value map[string]interface{}) (found bool, id, esTargetIndex string, err error) {
-	client, err := elasticsearch.Client()
+	client, err := c.eClient()
 	if err != nil {
 		return
 	}
@@ -542,7 +532,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 				return false, "", esTargetIndex, err
 			}
 			for k, v := range before {
-				log.Debug().Msgf("K/V to delete %v == %v", k, v)
+				c.Logger.Debug().Msgf("K/V to delete %v == %v", k, v)
 				queries = append(queries, elastic.NewMatchQuery(k, v))
 			}
 		}
@@ -558,7 +548,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 						return false, "", esTargetIndex, err
 					}
 					if z, ok := before[column]; ok {
-						log.Debug().Msgf("K/V to search for %v == %v", column, z)
+						c.Logger.Debug().Msgf("K/V to search for %v == %v", column, z)
 						queries = append(queries, elastic.NewMatchQuery(column, z))
 					}
 				} else {
@@ -573,7 +563,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 					return false, "", esTargetIndex, err
 				}
 				if z, ok := before[column]; ok {
-					log.Debug().Msgf("K/V to delete %v == %v", column, z)
+					c.Logger.Debug().Msgf("K/V to delete %v == %v", column, z)
 					queries = append(queries, elastic.NewMatchQuery(column, z))
 				}
 			}
@@ -592,7 +582,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 	}
 
 	if documentToDelete {
-		log.Debug().Msgf("Elasticsearch query before document deletion %s", string(data))
+		c.Logger.Debug().Msgf("Elasticsearch query before document deletion %s", string(data))
 	}
 
 	result, err := client.Search().
@@ -613,7 +603,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 		}
 
 		if len(result.Hits.Hits) > 1 {
-			log.Info().Msgf("Elasticsearch search query on index %s %s", esTargetIndex, string(data))
+			c.Logger.Info().Msgf("Elasticsearch search query on index %s %s", esTargetIndex, string(data))
 			return false, "", esTargetIndex, fmt.Errorf("Multiple document found with same data")
 		}
 		for _, hit := range result.Hits.Hits {
@@ -628,7 +618,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 // into elasticsearch index
 func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniqId string) (err error) {
 	var esTargetIndex string
-	client, err := elasticsearch.Client()
+	client, err := c.eClient()
 	defer client.Stop()
 
 	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
@@ -677,7 +667,7 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniq
 // from elasticsearch index
 func (c *Validate) DeleteContent(index int, id string) (err error) {
 	var esTargetIndex string
-	client, err := elasticsearch.Client()
+	client, err := c.eClient()
 	defer client.Stop()
 
 	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
