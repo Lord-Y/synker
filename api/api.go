@@ -106,7 +106,7 @@ func (c *API) runPrerequisitesAndStartProcessing(validated *processing.Validate)
 	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
-	if c.Init {
+	if validated.Init {
 		c.RunPrerequisitesOnly(validated)
 	}
 	validated.Processing()
