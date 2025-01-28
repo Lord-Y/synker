@@ -1,6 +1,6 @@
 module github.com/Lord-Y/synker
 
-go 1.23.3
+go 1.23.5
 
 require (
 	github.com/gin-contrib/logger v1.2.2
