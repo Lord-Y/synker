@@ -1,5 +1,5 @@
-// Kafka package will handle all kafka requirements
-package kafka
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/Lord-Y/synker/commons"
 	"github.com/Lord-Y/synker/models"
-	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
@@ -24,8 +23,8 @@ const (
 	timeout time.Duration = 10 * time.Second
 )
 
-// Client permit to connect to kafka brokers
-func Client() (conn *kafka.Conn, err error) {
+// kClient permit to connect to kafka brokers
+func (c *Validate) kClient() (conn *kafka.Conn, err error) {
 	var (
 		dialer    *kafka.Dialer
 		mechanism sasl.Mechanism
@@ -95,7 +94,6 @@ func Client() (conn *kafka.Conn, err error) {
 			DualStack: true,
 		}
 	}
-	log.Info().Msgf("Debug GetKafkaURI %s", commons.GetKafkaURI())
 	conn, err = dialer.Dial("tcp", commons.GetKafkaURI())
 
 	if err != nil {
@@ -104,7 +102,7 @@ func Client() (conn *kafka.Conn, err error) {
 	return
 }
 
-func connectToController(conn *kafka.Conn) (connLeader *kafka.Conn, err error) {
+func (c *Validate) connectToController(conn *kafka.Conn) (connLeader *kafka.Conn, err error) {
 	controller, err := conn.Controller()
 	if err != nil {
 		return
@@ -123,10 +121,10 @@ func connectToController(conn *kafka.Conn) (connLeader *kafka.Conn, err error) {
 	return
 }
 
-// CreateTopic permit to create a topic
-func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
+// createTopic permit to create a topic
+func (c *Validate) createTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
 	defer conn.Close()
-	connLeader, err := connectToController(conn)
+	connLeader, err := c.connectToController(conn)
 	if err != nil {
 		return
 	}
@@ -161,10 +159,10 @@ func CreateTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
 	return
 }
 
-// ListTopics permit to list all topics
-func ListTopics(conn *kafka.Conn) (topics []string, err error) {
+// listTopics permit to list all topics
+func (c *Validate) listTopics(conn *kafka.Conn) (topics []string, err error) {
 	defer conn.Close()
-	connLeader, err := connectToController(conn)
+	connLeader, err := c.connectToController(conn)
 	if err != nil {
 		return
 	}
@@ -185,11 +183,12 @@ func ListTopics(conn *kafka.Conn) (topics []string, err error) {
 	return
 }
 
-// DeleteTopics permit to delete topics
-func DeleteTopics(conn *kafka.Conn, topics []string) (err error) {
+// deleteTopics permit to delete topics
+func (c *Validate) deleteTopics(conn *kafka.Conn, topics []string) (err error) {
 	defer conn.Close()
-	connLeader, err := connectToController(conn)
+	connLeader, err := c.connectToController(conn)
 	if err != nil {
+		c.Logger.Info().Msgf("XXXX %v", err.Error())
 		return
 	}
 	defer connLeader.Close()
@@ -198,10 +197,10 @@ func DeleteTopics(conn *kafka.Conn, topics []string) (err error) {
 	return
 }
 
-// ProduceMessage permit to write a message into specified topic
-func ProduceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err error) {
+// produceMessage permit to write a message into specified topic
+func (c *Validate) produceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err error) {
 	defer conn.Close()
-	connLeader, err := connectToController(conn)
+	connLeader, err := c.connectToController(conn)
 	if err != nil {
 		return
 	}
@@ -244,17 +243,17 @@ func ProduceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err err
 
 // consumeMessage permit to consume message into specified topic
 // and will be used for unit testing only
-func consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (err error) {
+func (c *Validate) consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (err error) {
 	defer conn.Close()
-	connLeader, err := connectToController(conn)
+	connLeader, err := c.connectToController(conn)
 	if err != nil {
+		c.Logger.Info().Msgf("YYYY %v", err.Error())
 		return
 	}
 	defer connLeader.Close()
 
 	brokers := []string{
-		connLeader.Broker().Host,
-		strconv.Itoa(connLeader.Broker().Port),
+		connLeader.Broker().Host + ":" + strconv.Itoa(connLeader.Broker().Port),
 	}
 
 	r := kafka.NewReader(kafka.ReaderConfig{
@@ -271,6 +270,6 @@ func consumeMessage(conn *kafka.Conn, consumerGroup string, topicName string) (e
 	if err != nil {
 		return
 	}
-	log.Debug().Msgf("Message at offset %d: %s = %s", m.Offset, string(m.Key), string(m.Value))
+	c.Logger.Debug().Msgf("Message at offset %d: %s = %s", m.Offset, string(m.Key), string(m.Value))
 	return
 }

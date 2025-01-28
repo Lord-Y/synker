@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/rs/zerolog/log"
+	"github.com/Lord-Y/synker/logger"
 )
 
 func performRequest(r http.Handler, headers map[string]string, method string, url string, payload string) (z *httptest.ResponseRecorder, err error) {
@@ -26,7 +26,7 @@ func performRequest(r http.Handler, headers map[string]string, method string, ur
 		}
 	}
 	if err != nil {
-		log.Error().Err(err).Msgf("Error occured while initalising http request")
+		logger.NewLogger().Error().Err(err).Msgf("Error occured while initalising http request")
 		return nil, err
 	}
 	if len(headers) > 0 {

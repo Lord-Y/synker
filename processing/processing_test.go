@@ -10,19 +10,18 @@ import (
 	"time"
 
 	"github.com/Lord-Y/synker/commons"
-	"github.com/Lord-Y/synker/elasticsearch"
-	"github.com/Lord-Y/synker/kafka"
+	"github.com/Lord-Y/synker/logger"
 	"github.com/Lord-Y/synker/tools"
 	"github.com/icrowley/fake"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRun(t *testing.T) {
+func TestParseAndValidateConfig(t *testing.T) {
 	var c Validate
+	c.Logger = logger.NewLogger()
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 }
 
 func TestValidate_fail_empty_dir(t *testing.T) {
@@ -33,8 +32,9 @@ func TestValidate_fail_empty_dir(t *testing.T) {
 			"validate",
 		}
 		var c Validate
+		c.Logger = logger.NewLogger()
 		c.ConfigDir = "examples/emptydir"
-		c.Run()
+		c.ParseAndValidateConfig()
 		return
 	}
 	cmd := exec.Command(
@@ -59,8 +59,9 @@ func TestValidate_fail_fake_dir(t *testing.T) {
 			"validate",
 		}
 		var c Validate
+		c.Logger = logger.NewLogger()
 		c.ConfigDir = "examples/emptydirr"
-		c.Run()
+		c.ParseAndValidateConfig()
 		return
 	}
 	cmd := exec.Command(
@@ -85,8 +86,9 @@ func TestValidate_fail_tmp_dir(t *testing.T) {
 			"validate",
 		}
 		var c Validate
+		c.Logger = logger.NewLogger()
 		c.ConfigDir = "/tmp"
-		c.Run()
+		c.ParseAndValidateConfig()
 		return
 	}
 	cmd := exec.Command(
@@ -111,8 +113,9 @@ func TestValidate_fail_falseconfig(t *testing.T) {
 			"validate",
 		}
 		var c Validate
+		c.Logger = logger.NewLogger()
 		c.ConfigDir = "examples/falseconfig"
-		c.Run()
+		c.ParseAndValidateConfig()
 		return
 	}
 	cmd := exec.Command(
@@ -131,36 +134,38 @@ func TestValidate_fail_falseconfig(t *testing.T) {
 
 func TestManageTopicsAndElasticsearchIndex(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := kafka.Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	topics, err := kafka.ListTopics(conn)
+	topics, err := c.listTopics(conn)
 	assert.Nil(err)
 	if tools.InSlice("movr.public.user_promo_codes", topics) {
-		conndel, err := kafka.Client()
+		conndel, err := c.kClient()
 		assert.Nil(err)
-		err = kafka.DeleteTopics(
+		err = c.deleteTopics(
 			conndel,
 			[]string{
 				"movr.public.user_promo_codes",
 			},
 		)
 		assert.Nil(err)
-		client, err := elasticsearch.Client()
+		client, err := c.eClient()
 		assert.Nil(err)
 
-		indexExist, err := elasticsearch.IndexAlreadyExist(client, "user_promo_codes")
+		indexExist, err := c.indexAlreadyExist(client, "user_promo_codes")
 		assert.Nil(err)
 		if indexExist {
-			client, err := elasticsearch.Client()
+			client, err := c.eClient()
 			assert.Nil(err)
-			b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+			b, err := c.deleteIndex(client, "user_promo_codes")
 			assert.Nil(err)
 			assert.Equal(true, b)
 		}
-		var c Validate
+
 		c.ConfigDir = "examples/schemas"
-		c.Run()
+		c.ParseAndValidateConfig()
 
 		err = c.ManageTopics()
 		assert.Nil(err)
@@ -171,32 +176,33 @@ func TestManageTopicsAndElasticsearchIndex(t *testing.T) {
 
 func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := kafka.Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	topics, err := kafka.ListTopics(conn)
+	topics, err := c.listTopics(conn)
 	assert.Nil(err)
 	if tools.InSlice("movr.public.user_promo_codes", topics) {
-		conndel, err := kafka.Client()
+		conndel, err := c.kClient()
 		assert.Nil(err)
-		err = kafka.DeleteTopics(
+		err = c.deleteTopics(
 			conndel,
 			[]string{
 				"movr.public.user_promo_codes",
 			},
 		)
 		assert.Nil(err)
-		client, err := elasticsearch.Client()
+		client, err := c.eClient()
 		assert.Nil(err)
 
-		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		b, err := c.deleteIndex(client, "user_promo_codes")
 		assert.Nil(err)
 		assert.Equal(true, b)
 	}
 
-	var c Validate
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 
 	err = c.ManageTopics()
 	assert.Nil(err)
@@ -215,32 +221,33 @@ func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
 
 func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := kafka.Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	topics, err := kafka.ListTopics(conn)
+	topics, err := c.listTopics(conn)
 	assert.Nil(err)
 	if tools.InSlice("movr.public.user_promo_codes", topics) {
-		conndel, err := kafka.Client()
+		conndel, err := c.kClient()
 		assert.Nil(err)
-		err = kafka.DeleteTopics(
+		err = c.deleteTopics(
 			conndel,
 			[]string{
 				"movr.public.user_promo_codes",
 			},
 		)
 		assert.Nil(err)
-		client, err := elasticsearch.Client()
+		client, err := c.eClient()
 		assert.Nil(err)
 
-		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		b, err := c.deleteIndex(client, "user_promo_codes")
 		assert.Nil(err)
 		assert.Equal(true, b)
 	}
 
-	var c Validate
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 
 	err = c.ManageTopics()
 	assert.Nil(err)
@@ -259,35 +266,36 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
 
 func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_created(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	conn, err := kafka.Client()
+	conn, err := c.kClient()
 	assert.Nil(err)
-	topics, err := kafka.ListTopics(conn)
+	topics, err := c.listTopics(conn)
 	assert.Nil(err)
 	if tools.InSlice("movr.public.user_promo_codes", topics) {
-		conndel, err := kafka.Client()
+		conndel, err := c.kClient()
 		assert.Nil(err)
-		err = kafka.DeleteTopics(
+		err = c.deleteTopics(
 			conndel,
 			[]string{
 				"movr.public.user_promo_codes",
 			},
 		)
 		if err != nil {
-			log.Error().Err(err).Msg("TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_created")
+			c.Logger.Error().Err(err).Msg("TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_created")
 		}
 		assert.Nil(err)
-		client, err := elasticsearch.Client()
+		client, err := c.eClient()
 		assert.Nil(err)
 
-		b, err := elasticsearch.DeleteIndex(client, "user_promo_codes")
+		b, err := c.deleteIndex(client, "user_promo_codes")
 		assert.Nil(err)
 		assert.Equal(true, b)
 	}
 
-	var c Validate
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 
 	err = c.ManageTopics()
 	assert.Nil(err)
@@ -310,8 +318,9 @@ func TestManageChangeFeed(t *testing.T) {
 	assert := assert.New(t)
 
 	var c Validate
+	c.Logger = logger.NewLogger()
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 	err := c.ManageChangeFeed()
 	assert.Nil(err)
 }
@@ -327,8 +336,9 @@ func TestValidate_processing(t *testing.T) {
 
 	go func() {
 		var c Validate
+		c.Logger = logger.NewLogger()
 		c.ConfigDir = "examples/schemas"
-		c.Run()
+		c.ParseAndValidateConfig()
 		go func() {
 			time.Sleep(60 * time.Second)
 			<-sigc
@@ -376,8 +386,9 @@ func TestValidate_processing_with_new_id(t *testing.T) {
 
 	fakeCharacter := fake.CharactersN(5)
 	var c Validate
+	c.Logger = logger.NewLogger()
 	c.ConfigDir = "examples/schemas"
-	c.Run()
+	c.ParseAndValidateConfig()
 	err = manageUserPromoCodesForUnitTesting("add", fakeCharacter)
 	assert.Nil(err)
 

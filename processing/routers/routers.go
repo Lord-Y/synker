@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Lord-Y/synker/api/crdb"
-	"github.com/Lord-Y/synker/api/health"
-	apiLogger "github.com/Lord-Y/synker/logger"
+	cLogger "github.com/Lord-Y/synker/logger"
+	"github.com/Lord-Y/synker/processing/crdb"
+	"github.com/Lord-Y/synker/processing/health"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
@@ -17,18 +17,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func init() {
-	os.Setenv("SYNKER_BATCH_LOG", "true")
-	defer os.Unsetenv("APP_BATCH_LOG")
-	apiLogger.SetLoggerLogLevel()
-}
-
 // SetupRouter func handle all routes of the api
 func SetupRouter() *gin.Engine {
 	gin.DisableConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
-
-	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
 	router := gin.New()
 	router.Use(requestid.New())
@@ -39,11 +31,8 @@ func SetupRouter() *gin.Engine {
 			logger.WithUTC(true),
 			logger.WithLogger(
 				func(c *gin.Context, l zerolog.Logger) zerolog.Logger {
-					return zerolog.New(os.Stdout).
-						With().
-						Timestamp().
-						Str("requestId", requestid.Get(c)).
-						Logger()
+					log.Logger = *cLogger.NewLogger()
+					return log.With().Str("requestId", requestid.Get(c)).Logger()
 				},
 			),
 		),

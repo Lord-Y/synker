@@ -1,5 +1,5 @@
-// Package api assemble all requirements to start the api
-package api
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"context"
@@ -11,24 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Lord-Y/synker/api/routers"
-	apiLogger "github.com/Lord-Y/synker/logger"
-	"github.com/Lord-Y/synker/models"
-	"github.com/Lord-Y/synker/processing"
-	"github.com/rs/zerolog/log"
+	"github.com/Lord-Y/synker/processing/routers"
 )
 
-type API models.Configuration
-
-// init func
-func init() {
-	os.Setenv("SYNKER_BATCH_LOG", "true")
-	defer os.Unsetenv("APP_BATCH_LOG")
-	apiLogger.SetLoggerLogLevel()
-}
-
-// Run will start the api server
-func (c *API) Run(validated *processing.Validate) {
+// RunAPI will start the api server
+func (c *Validate) RunAPI() {
 	var appPort string
 	port := strings.TrimSpace(os.Getenv("SYNKER_API_PORT"))
 
@@ -48,15 +35,15 @@ func (c *API) Run(validated *processing.Validate) {
 		Addr:    appPort,
 		Handler: router,
 	}
-	log.Info().Msgf("Starting api server on port %s", appPort)
+	c.Logger.Info().Msgf("Starting api server on port %s", appPort)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("Startup api server failed")
+			c.Logger.Fatal().Err(err).Msg("Startup api server failed")
 		}
 	}()
 
-	go c.runPrerequisitesAndStartProcessing(validated)
+	go c.runPrerequisitesAndStartProcessing()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 minutes.
@@ -66,35 +53,35 @@ func (c *API) Run(validated *processing.Validate) {
 	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Info().Msg("Shutting down api server")
+	c.Logger.Info().Msg("Shutting down api server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal().Err(err).Msg("API server shutted down abruptly")
+		c.Logger.Fatal().Err(err).Msg("API server shutted down abruptly")
 	}
-	log.Info().Msg("API server exited successfully")
+	c.Logger.Info().Msg("API server exited successfully")
 }
 
 // RunPrerequisitesOnly permit to run all functions
 // related to Kafka, elasticsearch and cockroach feeds
-func (c *API) RunPrerequisitesOnly(validated *processing.Validate) {
+func (c *Validate) RunPrerequisitesOnly() {
 	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
-	err := validated.ManageTopics()
+	err := c.ManageTopics()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Fail to manage topics")
+		c.Logger.Fatal().Err(err).Msg("Fail to manage topics")
 		return
 	}
-	err = validated.ManageElasticsearchIndex()
+	err = c.ManageElasticsearchIndex()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Fail to manage elasticsearch indexes")
+		c.Logger.Fatal().Err(err).Msg("Fail to manage elasticsearch indexes")
 		return
 	}
-	err = validated.ManageChangeFeed()
+	err = c.ManageChangeFeed()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Fail to manage changefeed")
+		c.Logger.Fatal().Err(err).Msg("Fail to manage changefeed")
 		return
 	}
 }
@@ -102,12 +89,12 @@ func (c *API) RunPrerequisitesOnly(validated *processing.Validate) {
 // runPrerequisitesAndStartProcessing permit to run all functions
 // related to Kafka, elasticsearch and cockroach feeds
 // and then start processing all kafka messages
-func (c *API) runPrerequisitesAndStartProcessing(validated *processing.Validate) {
+func (c *Validate) runPrerequisitesAndStartProcessing() {
 	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
-	if validated.Init {
-		c.RunPrerequisitesOnly(validated)
+	if c.Init {
+		c.RunPrerequisitesOnly()
 	}
-	validated.Processing()
+	c.Processing()
 }

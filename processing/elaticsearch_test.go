@@ -1,37 +1,48 @@
-// Package elasticsearch permit to push or delete all datas from db to elasticsearch
-package elasticsearch
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"os"
 	"testing"
 
+	"github.com/Lord-Y/synker/logger"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPing(t *testing.T) {
+func TestElasticsearchPing(t *testing.T) {
 	assert := assert.New(t)
-	b := Ping()
+	var c Validate
+	c.Logger = logger.NewLogger()
+
+	b := c.ePing()
 	assert.Equal(true, b)
 }
 
-func TestPing_fail(t *testing.T) {
+func TestElasticsearchPing_fail(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
+
 	os.Setenv("SYNKER_ELASTICSEARCH_URI", "http://127.0.0.1:19200")
-	b := Ping()
+	b := c.ePing()
 	assert.Equal(false, b)
 	os.Setenv("SYNKER_ELASTICSEARCH_URI", "http://127.0.0.1:9200")
 }
 
-func TestClient(t *testing.T) {
+func TestElasticsearchClient(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	client, err := Client()
+	client, err := c.eClient()
 	defer client.Stop()
 	assert.Nil(err)
 }
 
-func TestCreateIndex(t *testing.T) {
+func TestElasticsearchCreateIndex(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
 	mapping := `
 	{
@@ -66,32 +77,36 @@ func TestCreateIndex(t *testing.T) {
 	}
 	`
 
-	client, err := Client()
+	client, err := c.eClient()
 	assert.Nil(err)
 
-	b, err := createIndex(client, "twitter", mapping)
-	assert.Nil(err)
-	assert.Equal(true, b)
-}
-
-func TestIndexAlreadyExist(t *testing.T) {
-	assert := assert.New(t)
-
-	client, err := Client()
-	assert.Nil(err)
-
-	b, err := IndexAlreadyExist(client, "twitter")
+	b, err := c.createIndex(client, "twitter", mapping)
 	assert.Nil(err)
 	assert.Equal(true, b)
 }
 
-func TestDeleteIndex(t *testing.T) {
+func TestElasticsearchIndexAlreadyExist(t *testing.T) {
 	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
 
-	client, err := Client()
+	client, err := c.eClient()
 	assert.Nil(err)
 
-	b, err := DeleteIndex(client, "twitter")
+	b, err := c.indexAlreadyExist(client, "twitter")
+	assert.Nil(err)
+	assert.Equal(true, b)
+}
+
+func TestElasticsearchDeleteIndex(t *testing.T) {
+	assert := assert.New(t)
+	var c Validate
+	c.Logger = logger.NewLogger()
+
+	client, err := c.eClient()
+	assert.Nil(err)
+
+	b, err := c.deleteIndex(client, "twitter")
 	assert.Nil(err)
 	assert.Equal(true, b)
 }
