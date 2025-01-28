@@ -6,13 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-// SetLoggerLogLevel permit to set default log level
-func SetLoggerLogLevel() {
+func NewLogger() *zerolog.Logger {
+	var logger zerolog.Logger
 	switch strings.TrimSpace(os.Getenv("SYNKER_LOG_LEVEL")) {
 	case "panic":
 		zerolog.SetGlobalLevel(zerolog.PanicLevel)
@@ -24,9 +22,6 @@ func SetLoggerLogLevel() {
 		zerolog.SetGlobalLevel(zerolog.WarnLevel)
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		if strings.TrimSpace(os.Getenv("SYNKER_BATCH_LOG")) == "" {
-			gin.SetMode("debug")
-		}
 	case "trace":
 		zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	default:
@@ -41,8 +36,10 @@ func SetLoggerLogLevel() {
 		output.FormatMessage = func(i interface{}) string {
 			return fmt.Sprintf("%s", i)
 		}
-		log.Logger = zerolog.New(output).With().Timestamp().Caller().Logger()
+
+		logger = zerolog.New(output).With().Timestamp().Caller().Logger()
 	} else {
-		log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+		logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 	}
+	return &logger
 }
