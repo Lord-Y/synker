@@ -15,6 +15,7 @@ require (
 	github.com/magefile/mage v1.15.0
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/nqd/flat v0.2.0
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/rs/zerolog v1.33.0
 	github.com/segmentio/kafka-go v0.4.47
@@ -39,6 +40,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
