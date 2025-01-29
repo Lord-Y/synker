@@ -20,6 +20,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
+	"github.com/nqd/flat"
 	"github.com/olivere/elastic/v7"
 	kafkago "github.com/segmentio/kafka-go"
 	"gopkg.in/yaml.v3"
@@ -518,7 +519,27 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 					return false, "", esTargetIndex, err
 				}
 				for k, v := range before {
-					queries = append(queries, elastic.NewMatchQuery(k, v))
+					isMap, multiKeys := c.isMap(v)
+					switch {
+					case isMap && multiKeys:
+						continue
+					case isMap && !multiKeys:
+						x := make(map[string]interface{})
+						x[k] = v
+						flatten, err := flat.Flatten(x, nil)
+						if err != nil {
+							c.Logger.Error().Err(err).Msgf("Fail to flatten map %+v", v)
+						} else {
+							c.Logger.Debug().Msgf("flatten map %+v", flatten)
+							for fk, fv := range flatten {
+								c.Logger.Debug().Msgf("K/V to search for %v == %v", fk, fv)
+								queries = append(queries, elastic.NewMatchQuery(fk, fv))
+							}
+						}
+					default:
+						c.Logger.Debug().Msgf("K/V to search for %v == %v", k, v)
+						queries = append(queries, elastic.NewMatchQuery(k, v))
+					}
 				}
 			} else {
 				return
@@ -532,8 +553,27 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 				return false, "", esTargetIndex, err
 			}
 			for k, v := range before {
-				c.Logger.Debug().Msgf("K/V to delete %v == %v", k, v)
-				queries = append(queries, elastic.NewMatchQuery(k, v))
+				isMap, multiKeys := c.isMap(v)
+				switch {
+				case isMap && multiKeys:
+					continue
+				case isMap && !multiKeys:
+					x := make(map[string]interface{})
+					x[k] = v
+					flatten, err := flat.Flatten(x, nil)
+					if err != nil {
+						c.Logger.Error().Err(err).Msgf("Fail to flatten map %+v", v)
+					} else {
+						c.Logger.Debug().Msgf("flatten map %+v", flatten)
+						for fk, fv := range flatten {
+							c.Logger.Debug().Msgf("K/V to delete for %v == %v", fk, fv)
+							queries = append(queries, elastic.NewMatchQuery(fk, fv))
+						}
+					}
+				default:
+					c.Logger.Debug().Msgf("K/V to delete for %v == %v", k, v)
+					queries = append(queries, elastic.NewMatchQuery(k, v))
+				}
 			}
 		}
 		esQuery.Must(queries...)
@@ -581,10 +621,7 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 		return
 	}
 
-	if documentToDelete {
-		c.Logger.Debug().Msgf("Elasticsearch query before document deletion %s", string(data))
-	}
-
+	c.Logger.Debug().Msgf("Elasticsearch query that will be executed %s", string(data))
 	result, err := client.Search().
 		Index(esTargetIndex).
 		Query(esQuery).
@@ -689,6 +726,23 @@ func (c *Validate) DeleteContent(index int, id string) (err error) {
 
 	if err != nil {
 		return
+	}
+	return
+}
+
+func (c *Validate) isMap(x interface{}) (isMap bool, multiKeys bool) {
+	t := fmt.Sprintf("%T", x)
+	var m map[string]interface{}
+	isMap = strings.HasPrefix(t, "map[")
+	if isMap {
+		err := mapstructure.Decode(x, &m)
+		if err != nil {
+			c.Logger.Error().Err(err).Msgf("Fail to decode map structure")
+			return isMap, false
+		}
+		if len(m) > 1 {
+			return true, true
+		}
 	}
 	return
 }
