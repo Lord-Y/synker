@@ -152,15 +152,8 @@ Here is an example:
             type: keyword
 ```
 
-## Query type `notify`
-
-The query type `notify` usually go with the `advanced` query type. Let's say you have to tables with a `sql join query`, if the joined table has been modify, the main table won't be aware of it which means that `elasticsearch` data will be outdated.
-The query type `notify` enable us to resolve this problem.
-
-Here is an example:
-```yaml
-xxx
-```
+If you check the SQL query `SELECT rides.id,rides.city,rides.vehicle_city,rides.rider_id,rides.vehicle_id,rides.start_address,rides.end_address,rides.start_time,rides.end_time,rides.revenue,vehicles.type FROM rides LEFT JOIN vehicles ON vehicles.id = rides.vehicle_id`, you can see that it's a join query between tables `rides` and `vehicules`.
+Fortunately when updates will be done on `vehicules`, we will also received a kafka message that will be then processed by `synker`.
 
 ## Examples
 
