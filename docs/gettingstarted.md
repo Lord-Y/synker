@@ -158,3 +158,19 @@ Fortunately when updates will be done on `vehicules`, we will also received a ka
 ## Examples
 
 More examples are present in the `processing/examples/schemas` folder.
+
+## What should we do in case of schema changes?
+
+This is a very tricky one.
+If we have a `database schema change`, the sql query used will probably work anymore so in that case, the best things to do is to change the configuration file in order to create new elasticsearch index/alias associated with the right topics.
+
+Later on, you will have to manually in this order to drop old:
+- change feeds
+- topics
+- elasticsearch index
+
+If `elasticsearch schema change`, [elasticsearch reindex](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html) exist, but the prolem is you may still won't be able to get what you want done properly. So, once again you will end up doing the same as `database schema change`.
+
+Manually dropping stuffs is not the best but it's safe as a human intervention will be needed.
+Your application will also keep working as usual but you will see error growing into synker logs.
+Fortunately, prometheus metrics will help you to detect this kind of issues.
