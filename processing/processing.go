@@ -152,8 +152,8 @@ func (c *Validate) parsing() (file string, err error) {
 	return
 }
 
-// ManageTopics permit to create or update topics
-func (c *Validate) ManageTopics() (err error) {
+// manageTopics permit to create or update topics
+func (c *Validate) manageTopics() (err error) {
 	ls, err := c.kClient()
 	if err != nil {
 		return err
@@ -186,8 +186,8 @@ func (c *Validate) ManageTopics() (err error) {
 	return
 }
 
-// ManageElasticsearchIndex permit to check or create elasticsearch index
-func (c *Validate) ManageElasticsearchIndex() (err error) {
+// manageElasticsearchIndex permit to check or create elasticsearch index
+func (c *Validate) manageElasticsearchIndex() (err error) {
 	client, err := c.eClient()
 	if err != nil {
 		return err
@@ -267,8 +267,8 @@ func (c *Validate) ManageElasticsearchIndex() (err error) {
 	return
 }
 
-// ManageChangeFeed permit check and create required changefeed
-func (c *Validate) ManageChangeFeed() (err error) {
+// manageChangeFeed permit check and create required changefeed
+func (c *Validate) manageChangeFeed() (err error) {
 	for _, v := range c.ValidatedSchemas.Schemas {
 		count, err := countChangeFeed(v.ChangeFeed.FullTableName, "running")
 		if err != nil {
@@ -284,8 +284,8 @@ func (c *Validate) ManageChangeFeed() (err error) {
 	return
 }
 
-// Processing permit to start processing kafka messages and sent it to elasticsearch
-func (c *Validate) Processing() {
+// processing permit to start processing kafka messages and sent it to elasticsearch
+func (c *Validate) processing() {
 	wg := sync.WaitGroup{}
 
 	for k, v := range c.ValidatedSchemas.Schemas {
@@ -377,7 +377,7 @@ func (c *Validate) consume(index int, topic string) {
 
 		if value["after"] != nil {
 			if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
-				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
+				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
@@ -391,7 +391,7 @@ func (c *Validate) consume(index int, topic string) {
 					errorMessage = fmt.Sprintf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 				}
 
-				err = c.IndexNewContent(index, value, id)
+				err = c.indexNewContent(index, value, id)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
@@ -413,7 +413,7 @@ func (c *Validate) consume(index int, topic string) {
 				}
 
 				c.Logger.Debug().Msgf("result %s query %s", result, select_query)
-				exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
+				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
@@ -427,7 +427,7 @@ func (c *Validate) consume(index int, topic string) {
 					errorMessage = fmt.Sprintf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 				}
 
-				err = c.IndexNewContent(index, result, id)
+				err = c.indexNewContent(index, result, id)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
@@ -445,7 +445,7 @@ func (c *Validate) consume(index int, topic string) {
 				c.Logger.Debug().Msgf("Kafka message has been commited in topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			}
 		} else {
-			exist, id, esTargetIndex, err := c.SearchByVersion(index, key, value)
+			exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 			if err != nil {
 				c.Logger.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
 				return
@@ -460,7 +460,7 @@ func (c *Validate) consume(index int, topic string) {
 			}
 
 			if exist {
-				err = c.DeleteContent(index, id)
+				err = c.deleteContent(index, id)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
@@ -481,11 +481,14 @@ func (c *Validate) consume(index int, topic string) {
 	}
 }
 
-// SearchByVersion permit to search into elasticsearch
+// searchByVersion permit to search into elasticsearch
+//
 // if the new data provided already exist
+//
 // if it exist, it will return the elasticsearch id
+//
 // if it exist multiple times, an error will be returned
-func (c *Validate) SearchByVersion(index int, key []string, value map[string]interface{}) (found bool, id, esTargetIndex string, err error) {
+func (c *Validate) searchByVersion(index int, value map[string]interface{}) (found bool, id, esTargetIndex string, err error) {
 	client, err := c.eClient()
 	if err != nil {
 		return
@@ -651,9 +654,9 @@ func (c *Validate) SearchByVersion(index int, key []string, value map[string]int
 	return
 }
 
-// IndexNewContent permit to add or update provided data
+// indexNewContent permit to add or update provided data
 // into elasticsearch index
-func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniqId string) (err error) {
+func (c *Validate) indexNewContent(index int, value map[string]interface{}, uniqId string) (err error) {
 	var esTargetIndex string
 	client, err := c.eClient()
 	defer client.Stop()
@@ -700,9 +703,9 @@ func (c *Validate) IndexNewContent(index int, value map[string]interface{}, uniq
 	return
 }
 
-// DeleteContent permit to delete data with the provided id
+// deleteContent permit to delete data with the provided id
 // from elasticsearch index
-func (c *Validate) DeleteContent(index int, id string) (err error) {
+func (c *Validate) deleteContent(index int, id string) (err error) {
 	var esTargetIndex string
 	client, err := c.eClient()
 	defer client.Stop()

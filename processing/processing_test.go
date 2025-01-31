@@ -167,9 +167,9 @@ func TestManageTopicsAndElasticsearchIndex(t *testing.T) {
 		c.ConfigDir = "examples/schemas"
 		c.ParseAndValidateConfig()
 
-		err = c.ManageTopics()
+		err = c.manageTopics()
 		assert.Nil(err)
-		err = c.ManageElasticsearchIndex()
+		err = c.manageElasticsearchIndex()
 		assert.Nil(err)
 	}
 }
@@ -204,7 +204,7 @@ func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
 	c.ConfigDir = "examples/schemas"
 	c.ParseAndValidateConfig()
 
-	err = c.ManageTopics()
+	err = c.manageTopics()
 	assert.Nil(err)
 
 	var schema_id int
@@ -215,7 +215,7 @@ func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
 		}
 	}
 	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes_alias"
-	err = c.ManageElasticsearchIndex()
+	err = c.manageElasticsearchIndex()
 	assert.Nil(err)
 }
 
@@ -249,7 +249,7 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
 	c.ConfigDir = "examples/schemas"
 	c.ParseAndValidateConfig()
 
-	err = c.ManageTopics()
+	err = c.manageTopics()
 	assert.Nil(err)
 
 	var schema_id int
@@ -260,7 +260,7 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
 		}
 	}
 	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
-	err = c.ManageElasticsearchIndex()
+	err = c.manageElasticsearchIndex()
 	assert.Error(err)
 }
 
@@ -297,7 +297,7 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_cre
 	c.ConfigDir = "examples/schemas"
 	c.ParseAndValidateConfig()
 
-	err = c.ManageTopics()
+	err = c.manageTopics()
 	assert.Nil(err)
 
 	var schema_id int
@@ -307,10 +307,10 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_cre
 			break
 		}
 	}
-	err = c.ManageElasticsearchIndex()
+	err = c.manageElasticsearchIndex()
 	assert.Nil(err)
 	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
-	err = c.ManageElasticsearchIndex()
+	err = c.manageElasticsearchIndex()
 	assert.Error(err)
 }
 
@@ -321,7 +321,7 @@ func TestManageChangeFeed(t *testing.T) {
 	c.Logger = logger.NewLogger()
 	c.ConfigDir = "examples/schemas"
 	c.ParseAndValidateConfig()
-	err := c.ManageChangeFeed()
+	err := c.manageChangeFeed()
 	assert.Nil(err)
 }
 
@@ -344,7 +344,7 @@ func TestValidate_processing(t *testing.T) {
 			<-sigc
 			signal.Stop(sigc)
 		}()
-		c.Processing()
+		c.processing()
 	}()
 
 	err = proc.Signal(os.Interrupt)
@@ -367,7 +367,7 @@ func (c *Validate) testProcessing(stop chan struct{}) {
 		default:
 			if i == 0 {
 				i++
-				c.Processing()
+				c.processing()
 			}
 		}
 	}
