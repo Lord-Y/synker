@@ -69,17 +69,17 @@ func (c *Validate) RunPrerequisitesOnly() {
 	os.Setenv("SYNKER_CONFIG_DIR", c.ConfigDir)
 	defer os.Unsetenv("SYNKER_CONFIG_DIR")
 
-	err := c.ManageTopics()
+	err := c.manageTopics()
 	if err != nil {
 		c.Logger.Fatal().Err(err).Msg("Fail to manage topics")
 		return
 	}
-	err = c.ManageElasticsearchIndex()
+	err = c.manageElasticsearchIndex()
 	if err != nil {
 		c.Logger.Fatal().Err(err).Msg("Fail to manage elasticsearch indexes")
 		return
 	}
-	err = c.ManageChangeFeed()
+	err = c.manageChangeFeed()
 	if err != nil {
 		c.Logger.Fatal().Err(err).Msg("Fail to manage changefeed")
 		return
@@ -96,5 +96,5 @@ func (c *Validate) runPrerequisitesAndStartProcessing() {
 	if c.Init {
 		c.RunPrerequisitesOnly()
 	}
-	c.Processing()
+	c.processing()
 }
