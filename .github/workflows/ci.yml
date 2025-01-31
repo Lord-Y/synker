@@ -2,12 +2,15 @@ name: Unit testing
 
 on:
   push:
-    branches:
-    - main
     paths-ignore:
     - 'docs/**'
     - '.github/ISSUE_TEMPLATE/**'
+    branches:
+    - main
   pull_request:
+    paths-ignore:
+    - 'docs/**'
+    - '.github/ISSUE_TEMPLATE/**'
     branches:
     - main
 
