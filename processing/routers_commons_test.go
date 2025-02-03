@@ -1,4 +1,5 @@
-package routers
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"os"
@@ -12,7 +13,8 @@ func TestHealth(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-	router := SetupRouter()
+	var c Validate
+	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
@@ -28,7 +30,8 @@ func TestHealth_no_xrequestid(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-	router := SetupRouter()
+	var c Validate
+	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
@@ -44,7 +47,8 @@ func TestHealthz(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-	router := SetupRouter()
+	var c Validate
+	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/healthz", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
@@ -62,7 +66,8 @@ func TestHealth_prometheus(t *testing.T) {
 
 	os.Setenv("SYNKER_PROMETHEUS", "1")
 	defer os.Unsetenv("SYNKER_PROMETHEUS")
-	router := SetupRouter()
+	var c Validate
+	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")
@@ -82,7 +87,8 @@ func TestHealth_prometheus_port(t *testing.T) {
 	os.Setenv("SYNKER_PROMETHEUS_PORT", "9101")
 	defer os.Unsetenv("SYNKER_PROMETHEUS")
 	defer os.Unsetenv("SYNKER_PROMETHEUS_PORT")
-	router := SetupRouter()
+	var c Validate
+	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
 		assert.FailNow("Failed to perform http GET request")

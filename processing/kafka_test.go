@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Lord-Y/synker/logger"
-	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tls"
 	"github.com/jackc/fake"
 	"github.com/stretchr/testify/assert"
@@ -127,11 +126,11 @@ func TestCreateTopic(t *testing.T) {
 	assert.Nil(err)
 	err = c.createTopic(
 		conn,
-		models.CreateTopic{
+		createTopicModel{
 			Name:              test_create_topic,
 			NumPartitions:     1,
 			ReplicationFactor: 3,
-			TopicConfig: []models.TopicConfig{
+			TopicConfig: []topicConfig{
 				{
 					Key:   "max.message.bytes",
 					Value: "128000",
@@ -161,7 +160,7 @@ func TestKafkaProduceMessage(t *testing.T) {
 	assert.Nil(err)
 	err = c.produceMessage(
 		conn,
-		models.KafkaWriteMessage{
+		kafkaWriteMessage{
 			TopicName: test_create_topic,
 			Key:       "test",
 			Value:     "test",

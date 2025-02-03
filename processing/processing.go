@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Lord-Y/synker/models"
 	"github.com/Lord-Y/synker/tools"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -26,7 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Validate models.Configuration
+type Validate Configuration
 
 var (
 	// valideFiles will be used when walking into the directory tree
@@ -61,12 +60,12 @@ func (c *Validate) ParseAndValidateConfig() {
 		c.Logger.Fatal().Msg("No config files found to validate")
 		return
 	}
-	c.Files = files
+	c.files = files
 	z, err := c.parsing()
 	if err != nil {
 		c.Logger.Fatal().Err(err).Msgf("File %s is invalid", z)
 	}
-	for _, v := range c.ValidatedFiles {
+	for _, v := range c.validatedFiles {
 		c.Logger.Info().Msgf("Config file %s is valid", v.File)
 		if len(v.Queries) > 0 {
 			for _, query := range v.Queries {
@@ -94,14 +93,14 @@ func loadFiles(f string) (z []byte, err error) {
 func (c *Validate) parsing() (file string, err error) {
 	validate = validator.New()
 
-	for _, file = range c.Files {
+	for _, file = range c.files {
 		fBytes, err := loadFiles(file)
 		if err != nil {
 			return file, err
 		}
 		var (
-			z       models.Schemas
-			zv      models.ValidatedFiles
+			z       schemas
+			zv      validatedFiles
 			queries []string
 		)
 		if tools.IsYamlFromBytes(fBytes) {
@@ -142,11 +141,11 @@ func (c *Validate) parsing() (file string, err error) {
 		}
 		zv.File = file
 		zv.Queries = queries
-		c.ValidatedFiles = append(c.ValidatedFiles, zv)
-		if len(c.ValidatedSchemas.Schemas) == 0 {
-			c.ValidatedSchemas = z
+		c.validatedFiles = append(c.validatedFiles, zv)
+		if len(c.validatedSchemas.Schemas) == 0 {
+			c.validatedSchemas = z
 		} else {
-			c.ValidatedSchemas.Schemas = append(c.ValidatedSchemas.Schemas, z.Schemas...)
+			c.validatedSchemas.Schemas = append(c.validatedSchemas.Schemas, z.Schemas...)
 		}
 	}
 	return
@@ -164,7 +163,7 @@ func (c *Validate) manageTopics() (err error) {
 		return err
 	}
 
-	for _, v := range c.ValidatedSchemas.Schemas {
+	for _, v := range c.validatedSchemas.Schemas {
 		if !tools.InSlice(v.Topic.Name, topics) {
 			client, err := c.kClient()
 			if err != nil {
@@ -172,7 +171,7 @@ func (c *Validate) manageTopics() (err error) {
 			}
 			err = c.createTopic(
 				client,
-				models.CreateTopic{
+				createTopicModel{
 					Name:              v.Topic.Name,
 					NumPartitions:     v.Topic.NumPartitions,
 					ReplicationFactor: v.Topic.ReplicationFactor,
@@ -193,7 +192,7 @@ func (c *Validate) manageElasticsearchIndex() (err error) {
 		return err
 	}
 	defer client.Stop()
-	for _, v := range c.ValidatedSchemas.Schemas {
+	for _, v := range c.validatedSchemas.Schemas {
 		if v.Elasticsearch.Index.Create {
 			ctx := context.Background()
 			alias := strings.TrimSpace(v.Elasticsearch.Index.Alias)
@@ -269,7 +268,7 @@ func (c *Validate) manageElasticsearchIndex() (err error) {
 
 // manageChangeFeed permit check and create required changefeed
 func (c *Validate) manageChangeFeed() (err error) {
-	for _, v := range c.ValidatedSchemas.Schemas {
+	for _, v := range c.validatedSchemas.Schemas {
 		count, err := countChangeFeed(v.ChangeFeed.FullTableName, "running")
 		if err != nil {
 			c.Logger.Fatal().Err(err).Msgf("Fail to check if required changefeed %s on schema %s has status running", v.ChangeFeed.FullTableName, v.Name)
@@ -288,7 +287,7 @@ func (c *Validate) manageChangeFeed() (err error) {
 func (c *Validate) processing() {
 	wg := sync.WaitGroup{}
 
-	for k, v := range c.ValidatedSchemas.Schemas {
+	for k, v := range c.validatedSchemas.Schemas {
 		wg.Add(1)
 		topic := v.Topic.Name
 		k := k
@@ -316,7 +315,7 @@ func (c *Validate) consume(index int, topic string) {
 	r := kafkago.NewReader(kafkago.ReaderConfig{
 		Brokers:  brokers,
 		Topic:    topic,
-		GroupID:  fmt.Sprintf("synker_%s", strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Name)),
+		GroupID:  fmt.Sprintf("synker_%s", strings.TrimSpace(c.validatedSchemas.Schemas[index].Name)),
 		MinBytes: 1,
 		MaxBytes: 10e6,
 	})
@@ -325,7 +324,7 @@ func (c *Validate) consume(index int, topic string) {
 	ctx := context.Background()
 	for {
 		var (
-			message                          models.ConsumeMessage
+			message                          consumeMessage
 			value                            map[string]interface{}
 			key                              []string
 			mkBytes, mvBytes                 []byte
@@ -376,7 +375,7 @@ func (c *Validate) consume(index int, topic string) {
 		}
 
 		if value["after"] != nil {
-			if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
+			if reflect.ValueOf(c.validatedSchemas.Schemas[index].SQL).IsZero() {
 				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
@@ -399,14 +398,14 @@ func (c *Validate) consume(index int, topic string) {
 				documentIndexed = true
 				esIndex = esTargetIndex
 			} else {
-				t := strings.Split(c.ValidatedSchemas.Schemas[index].ChangeFeed.FullTableName, ".")
+				t := strings.Split(c.validatedSchemas.Schemas[index].ChangeFeed.FullTableName, ".")
 				var v map[string]interface{}
 				err = mapstructure.Decode(value["after"], &v)
 				if err != nil {
 					return
 				}
 
-				result, select_query, err := c.query(c.ValidatedSchemas.Schemas[index].SQL.Query, t[len(t)-1], v)
+				result, select_query, err := c.query(c.validatedSchemas.Schemas[index].SQL.Query, t[len(t)-1], v)
 				if err != nil {
 					c.Logger.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
 					return
@@ -496,8 +495,8 @@ func (c *Validate) searchByVersion(index int, value map[string]interface{}) (fou
 	defer client.Stop()
 
 	ctx := context.Background()
-	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+	esAlias := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	if esAlias != "" {
 		esTargetIndex = esAlias
@@ -512,7 +511,7 @@ func (c *Validate) searchByVersion(index int, value map[string]interface{}) (fou
 
 	var documentToDelete bool
 	esQuery := elastic.NewBoolQuery()
-	if reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
+	if reflect.ValueOf(c.validatedSchemas.Schemas[index].SQL).IsZero() {
 		var queries []elastic.Query
 		if value["after"] != nil {
 			var before map[string]interface{}
@@ -582,7 +581,7 @@ func (c *Validate) searchByVersion(index int, value map[string]interface{}) (fou
 		esQuery.Must(queries...)
 	} else {
 		var queries []elastic.Query
-		for _, column := range c.ValidatedSchemas.Schemas[index].SQL.Columns {
+		for _, column := range c.validatedSchemas.Schemas[index].SQL.Columns {
 			if value["after"] != nil {
 				if value["before"] != nil {
 					var before map[string]interface{}
@@ -661,11 +660,11 @@ func (c *Validate) indexNewContent(index int, value map[string]interface{}, uniq
 	client, err := c.eClient()
 	defer client.Stop()
 
-	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+	esAlias := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	var content map[string]interface{}
-	if !reflect.ValueOf(c.ValidatedSchemas.Schemas[index].SQL).IsZero() {
+	if !reflect.ValueOf(c.validatedSchemas.Schemas[index].SQL).IsZero() {
 		content = value
 	} else {
 		err = mapstructure.Decode(value["after"], &content)
@@ -710,8 +709,8 @@ func (c *Validate) deleteContent(index int, id string) (err error) {
 	client, err := c.eClient()
 	defer client.Stop()
 
-	esAlias := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
-	esIndex := strings.TrimSpace(c.ValidatedSchemas.Schemas[index].Elasticsearch.Index.Name)
+	esAlias := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Alias)
+	esIndex := strings.TrimSpace(c.validatedSchemas.Schemas[index].Elasticsearch.Index.Name)
 
 	if esAlias != "" {
 		esTargetIndex = esAlias

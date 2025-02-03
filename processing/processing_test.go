@@ -208,13 +208,13 @@ func TestManageTopicsAndElasticsearchIndex_with_alias(t *testing.T) {
 	assert.Nil(err)
 
 	var schema_id int
-	for k := range c.ValidatedSchemas.Schemas {
-		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+	for k := range c.validatedSchemas.Schemas {
+		if c.validatedSchemas.Schemas[k].Name == "user_promo_codes" {
 			schema_id = k
 			break
 		}
 	}
-	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes_alias"
+	c.validatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes_alias"
 	err = c.manageElasticsearchIndex()
 	assert.Nil(err)
 }
@@ -253,13 +253,13 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias(t *testing.T) {
 	assert.Nil(err)
 
 	var schema_id int
-	for k := range c.ValidatedSchemas.Schemas {
-		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+	for k := range c.validatedSchemas.Schemas {
+		if c.validatedSchemas.Schemas[k].Name == "user_promo_codes" {
 			schema_id = k
 			break
 		}
 	}
-	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
+	c.validatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
 	err = c.manageElasticsearchIndex()
 	assert.Error(err)
 }
@@ -301,15 +301,15 @@ func TestManageTopicsAndElasticsearchIndex_with_same_index_alias_after_index_cre
 	assert.Nil(err)
 
 	var schema_id int
-	for k := range c.ValidatedSchemas.Schemas {
-		if c.ValidatedSchemas.Schemas[k].Name == "user_promo_codes" {
+	for k := range c.validatedSchemas.Schemas {
+		if c.validatedSchemas.Schemas[k].Name == "user_promo_codes" {
 			schema_id = k
 			break
 		}
 	}
 	err = c.manageElasticsearchIndex()
 	assert.Nil(err)
-	c.ValidatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
+	c.validatedSchemas.Schemas[schema_id].Elasticsearch.Index.Alias = "user_promo_codes"
 	err = c.manageElasticsearchIndex()
 	assert.Error(err)
 }

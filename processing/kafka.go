@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/Lord-Y/synker/commons"
-	"github.com/Lord-Y/synker/models"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
@@ -122,7 +121,7 @@ func (c *Validate) connectToController(conn *kafka.Conn) (connLeader *kafka.Conn
 }
 
 // createTopic permit to create a topic
-func (c *Validate) createTopic(conn *kafka.Conn, kf models.CreateTopic) (err error) {
+func (c *Validate) createTopic(conn *kafka.Conn, kf createTopicModel) (err error) {
 	defer conn.Close()
 	connLeader, err := c.connectToController(conn)
 	if err != nil {
@@ -198,7 +197,7 @@ func (c *Validate) deleteTopics(conn *kafka.Conn, topics []string) (err error) {
 }
 
 // produceMessage permit to write a message into specified topic
-func (c *Validate) produceMessage(conn *kafka.Conn, message models.KafkaWriteMessage) (err error) {
+func (c *Validate) produceMessage(conn *kafka.Conn, message kafkaWriteMessage) (err error) {
 	defer conn.Close()
 	connLeader, err := c.connectToController(conn)
 	if err != nil {
