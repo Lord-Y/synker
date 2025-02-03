@@ -1,4 +1,5 @@
-package routers
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"net/http"

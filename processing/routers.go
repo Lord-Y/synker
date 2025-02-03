@@ -1,5 +1,5 @@
-// Package routers assemble all routes for the api
-package routers
+// Package processing provide all requirements to process change data capture
+package processing
 
 import (
 	"fmt"
@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	cLogger "github.com/Lord-Y/synker/logger"
-	"github.com/Lord-Y/synker/processing/crdb"
-	"github.com/Lord-Y/synker/processing/health"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
@@ -17,8 +15,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// SetupRouter func handle all routes of the api
-func SetupRouter() *gin.Engine {
+// setupRouter func handle all routes of the api
+func (c *Validate) setupRouter() *gin.Engine {
 	gin.DisableConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
 
@@ -51,11 +49,8 @@ func SetupRouter() *gin.Engine {
 
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/health", health.Health)
-		v1.GET("/healthz", health.Healthz)
-
-		v1.POST("/crdb/trigger", crdb.Trigger)
-		v1.PUT("/crdb/trigger", crdb.Trigger)
+		v1.GET("/health", health)
+		v1.GET("/healthz", healthz)
 	}
 	return router
 }

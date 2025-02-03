@@ -10,8 +10,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/Lord-Y/synker/processing/routers"
 )
 
 // RunAPI will start the api server
@@ -30,7 +28,7 @@ func (c *Validate) RunAPI() {
 		}
 	}
 
-	router := routers.SetupRouter()
+	router := c.setupRouter()
 	srv := &http.Server{
 		Addr:    appPort,
 		Handler: router,

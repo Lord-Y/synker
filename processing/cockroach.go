@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Lord-Y/synker/commons"
-	"github.com/Lord-Y/synker/models"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,7 +43,7 @@ func countChangeFeed(full_table_name, status string) (count int, err error) {
 }
 
 // createChangeFeed with create the change feed in the database
-func createChangeFeed(changefeed models.ChangeFeed) (err error) {
+func createChangeFeed(changefeed changeFeed) (err error) {
 	cfg, err := pgxpool.ParseConfig(commons.GetPGURI())
 	if err != nil {
 		return
