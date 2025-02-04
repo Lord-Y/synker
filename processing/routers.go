@@ -10,7 +10,6 @@ import (
 	"github.com/gin-contrib/logger"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
-	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -36,13 +35,14 @@ func (c *Validate) setupRouter() *gin.Engine {
 		),
 	)
 
-	// disable during unit testing
+	// disabled during unit testing
 	if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS")) != "" {
 		prometheus_port := "9101"
 		if strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT")) != "" {
 			prometheus_port = strings.TrimSpace(os.Getenv("SYNKER_PROMETHEUS_PORT"))
 		}
-		p := ginprometheus.NewPrometheus("http")
+		p := NewPrometheus("http")
+		p.Logger = c.Logger
 		p.SetListenAddressWithRouter(fmt.Sprintf(":%s", prometheus_port), router)
 		p.Use(router)
 	}
