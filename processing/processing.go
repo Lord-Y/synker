@@ -413,7 +413,7 @@ func (c *Validate) consume(index int, topic string) {
 					return
 				}
 
-				c.Logger.Debug().Msgf("result %s query %s", result, select_query)
+				c.Logger.Debug().Msgf("result %s query %+v", result, select_query)
 				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
 					c.increaseMetrics("elasticsearch", m.Topic, "indexing")
