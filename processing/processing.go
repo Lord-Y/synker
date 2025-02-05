@@ -308,8 +308,20 @@ func (c *Validate) consume(index int, topic string) {
 	}
 	defer conn.Close()
 
-	brokers := []string{
-		conn.Broker().Host + ":" + strconv.Itoa(conn.Broker().Port),
+	connLeader, err := c.connectToController(conn)
+	if err != nil {
+		c.Logger.Fatal().Err(err).Msg("Fail to connect to the controller")
+	}
+	defer connLeader.Close()
+
+	brokerList, err := connLeader.Brokers()
+	if err != nil {
+		c.Logger.Fatal().Err(err).Msg("Brokers list cannot be empty")
+	}
+
+	var brokers []string
+	for _, v := range brokerList {
+		brokers = append(brokers, v.Host+":"+strconv.Itoa(conn.Broker().Port))
 	}
 
 	r := kafkago.NewReader(kafkago.ReaderConfig{
