@@ -90,7 +90,7 @@ curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ```bash
 sudo docker-compose down -v
 # clean and restart:
-sudo docker-compose down -v && sleep 5 && sudo docker-compose up -d && watch curl -s 0:9200/_cat/indices?v
+sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml down -v && sleep 5 && sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml up -d && watch curl -s 0:9200/_cat/indices?v
 ```
 
 ## Removing only topics and indexes
