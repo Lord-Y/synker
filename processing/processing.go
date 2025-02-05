@@ -340,37 +340,43 @@ func (c *Validate) consume(index int, topic string) {
 		c.Logger.Debug().Msgf("Message at topic/partition/offset %v/%v/%v: %s = %s", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		mjson, err := json.Marshal(m)
 		if err != nil {
-			c.Logger.Error().Err(err).Msgf("Fail to marshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.increaseMetrics("kafka", m.Topic, "marshalling")
+			c.Logger.Error().Err(err).Msgf("Fail to marshal kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mjson, &message)
 		if err != nil {
-			c.Logger.Error().Err(err).Msgf("Fail to unmarshall kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.increaseMetrics("kafka", m.Topic, "marshalling")
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshal kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		mkBytes, err = base64.StdEncoding.DecodeString(message.Key)
 		if err != nil {
+			c.increaseMetrics("kafka", m.Topic, "encoding")
 			c.Logger.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mkBytes, &key)
 		if err != nil {
-			c.Logger.Error().Err(err).Msgf("Fail to unmarshall field key from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.increaseMetrics("kafka", m.Topic, "marshalling")
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshal field key from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		mvBytes, err = base64.StdEncoding.DecodeString(message.Value)
 		if err != nil {
+			c.increaseMetrics("kafka", m.Topic, "encoding")
 			c.Logger.Error().Err(err).Msgf("Fail to decode base64 field value from message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
 		err = json.Unmarshal(mvBytes, &value)
 		if err != nil {
-			c.Logger.Error().Err(err).Msgf("Fail to unmarshall field value from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
+			c.increaseMetrics("kafka", m.Topic, "marshalling")
+			c.Logger.Error().Err(err).Msgf("Fail to unmarshal field value from kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 			return
 		}
 
@@ -378,21 +384,16 @@ func (c *Validate) consume(index int, topic string) {
 			if reflect.ValueOf(c.validatedSchemas.Schemas[index].SQL).IsZero() {
 				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
+					c.increaseMetrics("elasticsearch", m.Topic, "indexing")
 					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
 
 				c.Logger.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
-				var errorMessage string
-				if exist {
-					errorMessage = fmt.Sprintf("Fail to index kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
-				} else {
-					errorMessage = fmt.Sprintf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
-				}
-
 				err = c.indexNewContent(index, value, id)
 				if err != nil {
-					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
+					c.increaseMetrics("elasticsearch", m.Topic, "indexing")
+					c.Logger.Error().Err(err).Msgf("Fail to update elasticsearch document in index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
 				documentIndexed = true
@@ -407,6 +408,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				result, select_query, err := c.query(c.validatedSchemas.Schemas[index].SQL.Query, t[len(t)-1], v)
 				if err != nil {
+					c.increaseMetrics("elasticsearch", m.Topic, "sql")
 					c.Logger.Error().Err(err).Msgf("Fail to execute SQL query `%s` with kafka message from topic %s on partition %d and offset %d", select_query, m.Topic, m.Partition, m.Offset)
 					return
 				}
@@ -414,6 +416,7 @@ func (c *Validate) consume(index int, topic string) {
 				c.Logger.Debug().Msgf("result %s query %s", result, select_query)
 				exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 				if err != nil {
+					c.increaseMetrics("elasticsearch", m.Topic, "indexing")
 					c.Logger.Error().Err(err).Msgf("Document already exist in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
@@ -428,6 +431,7 @@ func (c *Validate) consume(index int, topic string) {
 
 				err = c.indexNewContent(index, result, id)
 				if err != nil {
+					c.increaseMetrics("elasticsearch", m.Topic, "indexing")
 					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
 					return
 				}
@@ -438,6 +442,7 @@ func (c *Validate) consume(index int, topic string) {
 			if documentIndexed {
 				c.Logger.Debug().Msgf("Kafka message has been indexed into elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 				if err := r.CommitMessages(ctx, m); err != nil {
+					c.increaseMetrics("kafka", m.Topic, "commit")
 					c.Logger.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}
@@ -446,22 +451,18 @@ func (c *Validate) consume(index int, topic string) {
 		} else {
 			exist, id, esTargetIndex, err := c.searchByVersion(index, value)
 			if err != nil {
+				c.increaseMetrics("elasticsearch", m.Topic, "indexing")
 				c.Logger.Error().Err(err).Msgf("Document with key(s) %s in elasticsearch index %s with kafka message from topic %s on partition %d and offset %d", key, esTargetIndex, m.Topic, m.Partition, m.Offset)
 				return
 			}
 
 			c.Logger.Debug().Msgf("Data exist in elasticsearch index %s? %t", esTargetIndex, exist)
-			var errorMessage string
-			if exist {
-				errorMessage = fmt.Sprintf("Fail to delete kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
-			} else {
-				errorMessage = fmt.Sprintf("Fail to delete elasticsearch document with id %s in index %s with kafka message from topic %s on partition %d and offset %d", id, esTargetIndex, m.Topic, m.Partition, m.Offset)
-			}
 
 			if exist {
 				err = c.deleteContent(index, id)
 				if err != nil {
-					c.Logger.Error().Err(err).Msgf("%s", errorMessage)
+					c.increaseMetrics("elasticsearch", m.Topic, "delete")
+					c.Logger.Error().Err(err).Msgf("Fail to delete elasticsearch document with id %s in index %s with kafka message from topic %s on partition %d and offset %d", id, esTargetIndex, m.Topic, m.Partition, m.Offset)
 					return
 				}
 				documentDeleted = true
@@ -471,6 +472,7 @@ func (c *Validate) consume(index int, topic string) {
 			if documentDeleted {
 				c.Logger.Debug().Msgf("Kafka message has been deleted from elasticsearch index `%s` from topic %s on partition %d and offset %d", esIndex, m.Topic, m.Partition, m.Offset)
 				if err := r.CommitMessages(ctx, m); err != nil {
+					c.increaseMetrics("kafka", m.Topic, "commit")
 					c.Logger.Error().Err(err).Msgf("Fail to commit kafka message from topic %s on partition %d and offset %d", m.Topic, m.Partition, m.Offset)
 					return
 				}

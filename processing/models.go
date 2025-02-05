@@ -4,6 +4,7 @@ package processing
 import (
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 )
 
@@ -21,6 +22,8 @@ type Configuration struct {
 	Init bool
 	// Logger expose zerolog so it can be override
 	Logger *zerolog.Logger
+	// metrics hold all metrics that will be used by synker
+	metrics *metrics
 }
 
 // List of validated files with SQL queries
@@ -137,4 +140,9 @@ type consumeMessage struct {
 	Partition int `json:"partition"`
 	// Offset returned by redpanda/kafka
 	Offset int `json:"offset"`
+}
+
+type metrics struct {
+	kafka         *prometheus.CounterVec
+	elasticsearch *prometheus.CounterVec
 }

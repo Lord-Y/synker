@@ -2,6 +2,8 @@
 package processing
 
 import (
+	"io"
+	"net/http"
 	"os"
 	"testing"
 
@@ -76,6 +78,18 @@ func TestHealth_prometheus(t *testing.T) {
 
 	assert.Equal(200, w.Code, "Failed to perform http GET request")
 	assert.Contains(w.Body.String(), `{"health":"OK"}`, "Failed to get right body content")
+
+	resp, err := http.Get("http://localhost:9101/metrics")
+	if err != nil {
+		assert.FailNow("Failed to perform http metrics endpoint")
+	}
+	body, errb := io.ReadAll(resp.Body)
+	if errb != nil {
+		assert.FailNow("Failed get body")
+	}
+	defer resp.Body.Close()
+	assert.Equal(200, resp.StatusCode)
+	assert.NotNil(body)
 }
 
 func TestHealth_prometheus_port(t *testing.T) {

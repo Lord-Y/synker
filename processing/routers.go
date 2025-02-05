@@ -45,6 +45,12 @@ func (c *Validate) setupRouter() *gin.Engine {
 		p.Logger = c.Logger
 		p.SetListenAddressWithRouter(fmt.Sprintf(":%s", prometheus_port), router)
 		p.Use(router)
+
+		newMetrics, err := newMetrics()
+		if err != nil {
+			c.Logger.Fatal().Err(err).Msg("Fail to register prometheus metrics")
+		}
+		c.metrics = newMetrics
 	}
 
 	v1 := router.Group("/api/v1")
