@@ -140,9 +140,7 @@ func NewPrometheus(subsystem string, customMetricsList ...[]*Metric) *Prometheus
 		metricsList = customMetricsList[0]
 	}
 
-	for _, metric := range standardMetrics {
-		metricsList = append(metricsList, metric)
-	}
+	metricsList = append(metricsList, standardMetrics...)
 
 	p := &Prometheus{
 		MetricsList: metricsList,
@@ -211,7 +209,12 @@ func (p *Prometheus) SetMetricsPathWithAuth(e *gin.Engine, accounts gin.Accounts
 
 func (p *Prometheus) runServer() {
 	if p.listenAddress != "" {
-		go p.router.Run(p.listenAddress)
+		go func() {
+			err := p.router.Run(p.listenAddress)
+			if err != nil {
+				p.Logger.Error().Err(err).Msg("Fail to start prometheus server")
+			}
+		}()
 	}
 }
 
