@@ -210,9 +210,8 @@ func (p *Prometheus) SetMetricsPathWithAuth(e *gin.Engine, accounts gin.Accounts
 func (p *Prometheus) runServer() {
 	if p.listenAddress != "" {
 		go func() {
-			err := p.router.Run(p.listenAddress)
-			if err != nil {
-				p.Logger.Error().Err(err).Msg("Fail to start prometheus server")
+			if err := p.router.Run(p.listenAddress); err != nil {
+				p.Logger.Fatal().Err(err).Msg("Fail to start prometheus server")
 			}
 		}()
 	}
