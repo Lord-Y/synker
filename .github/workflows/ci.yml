@@ -119,6 +119,7 @@ jobs:
           attempt_counter=$(($attempt_counter+1))
           sleep 5
         done
+        rpk cluster info --brokers ${SYNKER_KAFKA_URI}
 
     - name: Run unit testing
       run: |
