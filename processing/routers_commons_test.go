@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Lord-Y/synker/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,9 +17,11 @@ func TestHealth(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	var c Validate
+	c.Logger = logger.NewLogger()
 	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
+		c.Logger.Error().Err(err).Msg("Failed to perform http GET request")
 		assert.FailNow("Failed to perform http GET request")
 		return
 	}
@@ -69,9 +72,11 @@ func TestHealth_prometheus(t *testing.T) {
 	os.Setenv("SYNKER_PROMETHEUS", "1")
 	defer os.Unsetenv("SYNKER_PROMETHEUS")
 	var c Validate
+	c.Logger = logger.NewLogger()
 	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
+		c.Logger.Error().Err(err).Msg("Failed to perform http GET request")
 		assert.FailNow("Failed to perform http GET request")
 		return
 	}
@@ -81,7 +86,8 @@ func TestHealth_prometheus(t *testing.T) {
 
 	resp, err := http.Get("http://localhost:9101/metrics")
 	if err != nil {
-		assert.FailNow("Failed to perform http metrics endpoint")
+		c.Logger.Error().Err(err).Msg("Failed to perform http GET metrics endpoint")
+		assert.FailNow("Failed to perform http metrics GET endpoint")
 	}
 	body, errb := io.ReadAll(resp.Body)
 	if errb != nil {
@@ -102,9 +108,11 @@ func TestHealth_prometheus_port(t *testing.T) {
 	defer os.Unsetenv("SYNKER_PROMETHEUS")
 	defer os.Unsetenv("SYNKER_PROMETHEUS_PORT")
 	var c Validate
+	c.Logger = logger.NewLogger()
 	router := c.setupRouter()
 	w, err := performRequest(router, headers, "GET", "/api/v1/health", "")
 	if err != nil {
+		c.Logger.Error().Err(err).Msg("Failed to perform http GET request")
 		assert.FailNow("Failed to perform http GET request")
 		return
 	}
