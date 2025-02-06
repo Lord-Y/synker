@@ -1,7 +1,7 @@
 ---
 name: Enhancement Request
 about: Suggest a new an enhancement to Synker
-labels: "feature"
+labels: "enhancement"
 ---
 
 ### Proposal
