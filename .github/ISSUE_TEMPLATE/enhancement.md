@@ -1,17 +1,17 @@
 ---
-name: Feature Request
-about: Suggest a new feature or enhancement to Synker
+name: Enhancement Request
+about: Suggest a new an enhancement to Synker
 labels: "feature"
 ---
 
 ### Proposal
 <!--
-If you have an idea on how to improve Synker's, please describe it below.
+If you have an idea on how to enhance Synker, please describe it below.
 -->
 
 ### Use-cases
 <!--
-In order to properly evaluate the feature request, it is necessary to understand
+In order to properly evaluate the enhancement request, it is necessary to understand
 the use-cases for it. Please describe below the _end goal_ you are trying to
 achieve that has led you to request this feature.
 -->
