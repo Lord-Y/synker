@@ -83,19 +83,6 @@ func TestHealth_prometheus(t *testing.T) {
 
 	assert.Equal(200, w.Code, "Failed to perform http GET request")
 	assert.Contains(w.Body.String(), `{"health":"OK"}`, "Failed to get right body content")
-
-	resp, err := http.Get("http://localhost:9101/metrics")
-	if err != nil {
-		c.Logger.Error().Err(err).Msg("Failed to perform http GET metrics endpoint")
-		assert.FailNow("Failed to perform http metrics GET endpoint")
-	}
-	body, errb := io.ReadAll(resp.Body)
-	if errb != nil {
-		assert.FailNow("Failed get body")
-	}
-	defer resp.Body.Close()
-	assert.Equal(200, resp.StatusCode)
-	assert.NotNil(body)
 }
 
 func TestHealth_prometheus_port(t *testing.T) {
@@ -104,7 +91,7 @@ func TestHealth_prometheus_port(t *testing.T) {
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 
 	os.Setenv("SYNKER_PROMETHEUS", "1")
-	os.Setenv("SYNKER_PROMETHEUS_PORT", "9101")
+	os.Setenv("SYNKER_PROMETHEUS_PORT", "9111")
 	defer os.Unsetenv("SYNKER_PROMETHEUS")
 	defer os.Unsetenv("SYNKER_PROMETHEUS_PORT")
 	var c Validate
@@ -119,4 +106,17 @@ func TestHealth_prometheus_port(t *testing.T) {
 
 	assert.Equal(200, w.Code, "Failed to perform http GET request")
 	assert.Contains(w.Body.String(), `{"health":"OK"}`, "Failed to get right body content")
+
+	resp, err := http.Get("http://localhost:9111/metrics")
+	if err != nil {
+		c.Logger.Error().Err(err).Msg("Failed to perform http GET metrics endpoint")
+		assert.FailNow("Failed to perform http metrics GET endpoint")
+	}
+	body, errb := io.ReadAll(resp.Body)
+	if errb != nil {
+		assert.FailNow("Failed get body")
+	}
+	defer resp.Body.Close()
+	assert.Equal(200, resp.StatusCode)
+	assert.NotNil(body)
 }
