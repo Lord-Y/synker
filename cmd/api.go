@@ -2,17 +2,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/Lord-Y/synker/logger"
-
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 // API command options
-func API(c *cli.Context) (z *cli.Command) {
+func API() (z *cli.Command) {
 	return &cli.Command{
 		Name:  "api",
 		Usage: "Start api server",
@@ -32,7 +32,7 @@ func API(c *cli.Context) (z *cli.Command) {
 				Destination: &cmdValidate.Init,
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(context.Context, *cli.Command) error {
 			cmdValidate.Logger = logger.NewLogger()
 
 			if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
@@ -48,7 +48,9 @@ func API(c *cli.Context) (z *cli.Command) {
 				cmdValidate.Logger.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 
-			cmdValidate.ParseAndValidateConfig()
+			if err := cmdValidate.ParseAndValidateConfig(); err != nil {
+				return err
+			}
 			cmdValidate.RunAPI()
 			return nil
 		},

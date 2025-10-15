@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/Lord-Y/synker/logger"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 // Validate commands
-func Validate(c *cli.Context) (z *cli.Command) {
+func Validate() (z *cli.Command) {
 	return &cli.Command{
 		Name:  "validate",
 		Usage: "options related to configuration file",
@@ -19,10 +21,9 @@ func Validate(c *cli.Context) (z *cli.Command) {
 				Destination: &cmdValidate.ConfigDir,
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(context.Context, *cli.Command) error {
 			cmdValidate.Logger = logger.NewLogger()
-			cmdValidate.ParseAndValidateConfig()
-			return nil
+			return cmdValidate.ParseAndValidateConfig()
 		},
 	}
 }

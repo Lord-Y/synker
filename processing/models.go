@@ -13,7 +13,7 @@ type Configuration struct {
 	// Config dir containing files to be parsed
 	ConfigDir string `json:"configDir" yaml:"configDir"`
 	// List of files returned after walking into specified directory
-	files []string
+	files []parsedFile
 	// List of validated files
 	validatedFiles []validatedFiles
 	// List of validated schemas
@@ -26,9 +26,16 @@ type Configuration struct {
 	metrics *metrics
 }
 
+// parsedFile is a file that have been parsed
+type parsedFile struct {
+	file   string
+	isJson bool
+}
+
 // List of validated files with SQL queries
 type validatedFiles struct {
 	File    string
+	IsJson  bool
 	Queries []string
 }
 
@@ -93,7 +100,7 @@ type topicSchema struct {
 type sql struct {
 	// ColumnNames is the list of columns name to use to filter kafka message
 	// in order to insert or delete data in elasticsearch
-	Columns []string `json:"columnNames" yaml:"columnNames" validate:"required"`
+	Columns []string `json:"columns" yaml:"columns"`
 	// Query is the SQL query to execute
 	Query string `json:"query" yaml:"query" validate:"required"`
 }
@@ -117,11 +124,11 @@ type elasticsearchSchema struct {
 // elasticsearchIndex is the requirement to the elasticsearch index
 type elasticsearchIndex struct {
 	// Create index
-	Create bool `json:"create" yaml:"create"`
+	Create bool `json:"create" yaml:"create" validate:"omitempty"`
 	// Index name
 	Name string `json:"name" yaml:"name" validate:"required"`
 	// Alias name
-	Alias string `json:"alias" yaml:"alias"`
+	Alias string `json:"alias" yaml:"alias" validate:"omitempty"`
 }
 
 // consumeMessage permit to consume kafka messages

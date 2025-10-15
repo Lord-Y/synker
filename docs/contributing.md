@@ -88,7 +88,7 @@ curl -s "${SYNKER_ELASTICSEARCH_URI}/_cat/indices?pretty&v"
 ## Cleaning everything
 
 ```bash
-sudo docker-compose down -v
+sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml down -v
 # clean and restart:
 sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml down -v && sleep 5 && sudo docker-compose -f docker/cockroach-demo/docker-compose.yaml up -d && watch curl -s 0:9200/_cat/indices?v
 ```

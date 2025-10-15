@@ -38,33 +38,34 @@ var (
 )
 
 // ParseAndValidateConfig will validate the files configurations
-func (c *Validate) ParseAndValidateConfig() {
-	var files []string
-	err := filepath.WalkDir(
+func (c *Validate) ParseAndValidateConfig() error {
+	var files []parsedFile
+	if err := filepath.WalkDir(
 		c.ConfigDir,
 		func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 			if tools.InSlice(filepath.Ext(d.Name()), valideFiles) {
-				files = append(files, path)
+				files = append(files, parsedFile{
+					file:   path,
+					isJson: filepath.Ext(d.Name()) == ".json",
+				})
 			}
 			return nil
 		},
-	)
-	if err != nil {
-		c.Logger.Fatal().Err(err).Msgf("Fail to walk into directory %s", c.ConfigDir)
-		return
+	); err != nil {
+		return err
 	}
+
 	if len(files) == 0 {
-		c.Logger.Fatal().Msg("No config files found to validate")
-		return
+		return fmt.Errorf("no config files found to validate")
 	}
 	c.files = files
-	z, err := c.parsing()
-	if err != nil {
-		c.Logger.Fatal().Err(err).Msgf("File %s is invalid", z)
+	if _, err := c.parsing(); err != nil {
+		return err
 	}
+
 	for _, v := range c.validatedFiles {
 		c.Logger.Info().Msgf("Config file %s is valid", v.File)
 		if len(v.Queries) > 0 {
@@ -73,18 +74,19 @@ func (c *Validate) ParseAndValidateConfig() {
 			}
 		}
 	}
+	return nil
 }
 
 // loadFiles will load all files requests and return a slice of bytes
 func loadFiles(f string) (z []byte, err error) {
 	of, err := os.Open(f)
 	if err != nil {
-		return z, fmt.Errorf("Fail to open file `%s` on your system", f)
+		return z, fmt.Errorf("fail to open file `%s` on your system", f)
 	}
 	defer of.Close()
 	fo, err := io.ReadAll(of)
 	if err != nil {
-		return z, fmt.Errorf("Fail to read file content `%s` on your system", f)
+		return z, fmt.Errorf("fail to read file content `%s` on your system", f)
 	}
 	return fo, err
 }
@@ -93,49 +95,48 @@ func loadFiles(f string) (z []byte, err error) {
 func (c *Validate) parsing() (file string, err error) {
 	validate = validator.New()
 
-	for _, file = range c.files {
-		fBytes, err := loadFiles(file)
-		if err != nil {
-			return file, err
-		}
+	for _, v := range c.files {
 		var (
+			fBytes  []byte
 			z       schemas
 			zv      validatedFiles
 			queries []string
 		)
-		if tools.IsYamlFromBytes(fBytes) {
-			err = yaml.Unmarshal(fBytes, &z)
-			if err != nil {
-				return file, err
-			}
-			err = validate.Struct(z)
-			if err != nil {
-				return file, err
-			}
+		if fBytes, err = loadFiles(v.file); err != nil {
+			return file, err
 		}
-		if tools.IsJSONFromBytes(fBytes) {
-			err = json.Unmarshal(fBytes, &z)
-			if err != nil {
+		if len(fBytes) <= 3 {
+			return file, fmt.Errorf("content file length cannot be lower than 3")
+		}
+		if v.isJson {
+			if err = json.Unmarshal(fBytes, &z); err != nil {
 				return file, err
 			}
-			err = validate.Struct(z)
-			if err != nil {
+			if err = validate.Struct(z); err != nil {
+				return file, err
+			}
+		} else {
+			if err = yaml.Unmarshal(fBytes, &z); err != nil {
+				return file, err
+			}
+			if err = validate.Struct(z); err != nil {
 				return file, err
 			}
 		}
 		for _, v := range z.Schemas {
 			if !reflect.ValueOf(v.SQL).IsZero() {
 				query := strings.TrimSpace(v.SQL.Query)
+				c.Logger.Info().Msgf("v.SQL.Query file %+v", query)
 				if query != "" {
 					if !strings.Contains(query, ".") {
-						return file, fmt.Errorf("Your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b ...", query)
+						return file, fmt.Errorf("your SQL query `%s` is malformed. It must be in the format SELECT table_name.column_a,table_name.column_b", query)
 					}
 					if strings.Contains(strings.ToLower(query), " where ") && !strings.HasSuffix(query, ")") {
-						return file, fmt.Errorf("Your SQL query `%s` is malformed. It has a WHERE condition AND must be in the format SELECT table_name.column_a,table_name.column_b WHERE (table_name.column_c = 1)", query)
+						return file, fmt.Errorf("your SQL query `%s` is malformed. It has a WHERE condition AND must be in the format SELECT table_name.column_a,table_name.column_b WHERE (table_name.column_c = 1)", query)
 					}
 					queries = append(queries, query)
 				} else {
-					return file, fmt.Errorf("SQL query cannot be empty for advanced queryType")
+					return file, fmt.Errorf("sql query cannot be empty for advanced queryType")
 				}
 			}
 		}
@@ -209,7 +210,7 @@ func (c *Validate) manageElasticsearchIndex() (err error) {
 					return err
 				}
 				if !create.Acknowledged {
-					return fmt.Errorf("Fail to get index creation acknowledgement")
+					return fmt.Errorf("fail to get index creation acknowledgement")
 				}
 				if alias != "" {
 					if alias != "" && index != alias {
@@ -225,10 +226,10 @@ func (c *Validate) manageElasticsearchIndex() (err error) {
 							return err
 						}
 						if !alias_create.Acknowledged {
-							return fmt.Errorf("Fail to get alias creation acknowledgement")
+							return fmt.Errorf("fail to get alias creation acknowledgement")
 						}
 					} else {
-						return fmt.Errorf("Index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
+						return fmt.Errorf("index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
 					}
 				}
 			}
@@ -254,11 +255,11 @@ func (c *Validate) manageElasticsearchIndex() (err error) {
 							return err
 						}
 						if !alias_create.Acknowledged {
-							return fmt.Errorf("Fail to get alias creation acknowledgement")
+							return fmt.Errorf("fail to get alias creation acknowledgement")
 						}
 					}
 				} else {
-					return fmt.Errorf("Index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
+					return fmt.Errorf("index %s and alias %s cannot have the same name on schema %s", index, alias, v.Name)
 				}
 			}
 		}
@@ -657,7 +658,7 @@ func (c *Validate) searchByVersion(index int, value map[string]interface{}) (fou
 
 		if len(result.Hits.Hits) > 1 {
 			c.Logger.Info().Msgf("Elasticsearch search query on index %s %s", esTargetIndex, string(data))
-			return false, "", esTargetIndex, fmt.Errorf("Multiple document found with same data")
+			return false, "", esTargetIndex, fmt.Errorf("multiple document found with same data")
 		}
 		for _, hit := range result.Hits.Hits {
 			id = hit.Id

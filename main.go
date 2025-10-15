@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 
 	"github.com/Lord-Y/synker/cmd"
 	"github.com/Lord-Y/synker/logger"
-	cli "github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 // Make vars public for unit testing
@@ -18,31 +19,30 @@ var (
 )
 
 func init() {
-	CmdValidate = cmd.Validate(&cli.Context{})
-	VersionDetails = cmd.VersionDetails(&cli.Context{})
-	CmdAPI = cmd.API(&cli.Context{})
-	CmdInit = cmd.Init(&cli.Context{})
+	CmdValidate = cmd.Validate()
+	VersionDetails = cmd.VersionDetails()
+	CmdAPI = cmd.API()
+	CmdInit = cmd.Init()
 }
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "synker"
-	app.Usage = "A new cli with an api to sync data between databases and elasticsearch"
-	app.Description = "synker permit you to validate config and sync data from databases to elasticsearch"
-	app.Version = cmd.Version
-	app.EnableBashCompletion = true
-
-	app.Commands = []*cli.Command{
-		VersionDetails,
-		CmdValidate,
-		CmdInit,
-		CmdAPI,
+	cmd := cli.Command{
+		Name:                  "synker",
+		Usage:                 "A new cli with an api to sync data between databases and elasticsearch",
+		Description:           "synker permit you to validate config and sync data from databases to elasticsearch",
+		Version:               cmd.Version,
+		EnableShellCompletion: true,
+		Commands: []*cli.Command{
+			VersionDetails,
+			CmdValidate,
+			CmdInit,
+			CmdAPI,
+		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		if !strings.Contains(err.Error(), "Required flag") {
-			logger.NewLogger().Error().Err(err).Msg("Error occured while executing the program")
+			logger.NewLogger().Fatal().Err(err).Msg("Error occured while executing the program")
 		}
-		os.Exit(1)
 	}
 }

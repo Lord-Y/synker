@@ -110,7 +110,7 @@ func CheckIsFile(f string) (err error) {
 		return err
 	}
 	if !info.Mode().IsRegular() {
-		return fmt.Errorf("File %s is not a file", f)
+		return fmt.Errorf("file %s is not a file", f)
 	}
 	return
 }

@@ -1,16 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	cli "github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 func TestMain(t *testing.T) {
@@ -163,14 +165,14 @@ func TestMain_api_port(t *testing.T) {
 }
 
 func TestMain_fail(t *testing.T) {
-	assert := assert.New(t)
 	if os.Getenv("FATAL") == "1" {
 		main()
 		return
 	}
+
+	pwd, _ := os.Getwd()
 	cmd := exec.Command(
-		os.Args[0],
-		"synker",
+		filepath.Join(pwd, os.Args[0]),
 		"bad",
 		"-test.run=TestMain_fail",
 	)
@@ -179,18 +181,18 @@ func TestMain_fail(t *testing.T) {
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
 		return
 	}
-	assert.Error(err)
+	t.Fatalf("process ran with err %v, wanted exit status 1", err)
 }
 
 func TestMain_fail_api(t *testing.T) {
-	assert := assert.New(t)
 	if os.Getenv("FATAL") == "1" {
 		main()
 		return
 	}
+
+	pwd, _ := os.Getwd()
 	cmd := exec.Command(
-		os.Args[0],
-		"synker",
+		filepath.Join(pwd, os.Args[0]),
 		"api",
 		"-c",
 		"-test.run=TestMain_fail_api",
@@ -200,10 +202,10 @@ func TestMain_fail_api(t *testing.T) {
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
 		return
 	}
-	assert.Error(err)
+	t.Fatalf("process ran with err %v, wanted exit status 1", err)
 }
 
-func TestVersionDetails(t *testing.T) {
+func TestCommons(t *testing.T) {
 	assert := assert.New(t)
 
 	tests := []struct {
@@ -217,30 +219,6 @@ func TestVersionDetails(t *testing.T) {
 			},
 			fail: false,
 		},
-	}
-
-	app := cli.NewApp()
-	for _, tc := range tests {
-		app.Writer = io.Discard
-		app.Commands = []*cli.Command{
-			VersionDetails,
-		}
-		err := app.Run(tc.cliArgs)
-		if tc.fail {
-			assert.Error(err)
-		} else {
-			assert.NoError(err)
-		}
-	}
-}
-
-func TestValidate(t *testing.T) {
-	assert := assert.New(t)
-
-	tests := []struct {
-		cliArgs []string
-		fail    bool
-	}{
 		{
 			cliArgs: []string{
 				"synker",
@@ -250,15 +228,23 @@ func TestValidate(t *testing.T) {
 			},
 			fail: false,
 		},
+		{
+			cliArgs: []string{
+				"synker",
+				"validate",
+			},
+			fail: true,
+		},
 	}
 
-	app := cli.NewApp()
 	for _, tc := range tests {
-		app.Writer = io.Discard
-		app.Commands = []*cli.Command{
+		cmd := cli.Command{}
+		cmd.Writer = io.Discard
+		cmd.Commands = []*cli.Command{
+			VersionDetails,
 			CmdValidate,
 		}
-		err := app.Run(tc.cliArgs)
+		err := cmd.Run(context.Background(), tc.cliArgs)
 		if tc.fail {
 			assert.Error(err)
 		} else {
@@ -267,107 +253,69 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestValidate_fail_empty_dir(t *testing.T) {
-	assert := assert.New(t)
-	if os.Getenv("FATAL") == "1" {
-		os.Args = []string{
-			"synker",
-			"validate",
-		}
-		main()
-		return
-	}
-	cmd := exec.Command(
-		os.Args[0],
-		"synker",
-		"validate",
-		"-test.run=TestValidate_fail_empty_dir",
-	)
-	cmd.Env = append(os.Environ(), "FATAL=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-	assert.Error(err)
+type os_variable struct {
+	name, option              string
+	t                         *testing.T
+	vars, varsBackup, cliArgs []string
+	k                         int
 }
 
-func TestValidate_fail(t *testing.T) {
-	assert := assert.New(t)
-	if os.Getenv("FATAL") == "1" {
-		os.Args = []string{
-			"synker",
-			"validate",
-		}
-		main()
-		return
-	}
-	cmd := exec.Command(
-		os.Args[0],
-		"synker",
-		"validate",
-		"-test.run=TestValidate_fail",
-	)
-	cmd.Env = append(os.Environ(), "FATAL=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-	assert.Error(err)
-}
-
-type api_os_variable struct {
-	t    *testing.T
-	vars []string
-	k    int
-}
-
-func (test *api_os_variable) testMain_fail_api_os_variables() {
-	test.t.Run(fmt.Sprintf("testMain_fail_api_os_variables_%s", test.vars[test.k]), func(t *testing.T) {
-		assert := assert.New(t)
-		if os.Getenv("FATAL") == "1" {
+func (test *os_variable) testMain_fail_os_variables() {
+	test.t.Run(fmt.Sprintf("%s_%s_%s", test.name, test.option, test.vars[test.k]), func(t *testing.T) {
+		if os.Getenv(fmt.Sprintf("FATAL_%s_%s", test.option, test.vars[test.k])) == "1" {
+			os.Args = test.cliArgs
 			main()
 			return
 		}
 
 		cmd := exec.Command(
 			os.Args[0],
-			"synker",
-			"api",
-			"-c",
-			"processing/examples/schemas",
-			"-test.run=TestMain_fail_api_os_variables",
+			"-test.run="+test.name,
 		)
-
-		switch test.k {
-		case 0:
-			_ = os.Unsetenv(test.vars[test.k])
-		case 1:
-			os.Setenv("SYNKER_PG_URI", "postgres://root:@127.0.0.1:26257/movr?sslmode=disable")
-			_ = os.Unsetenv(test.vars[test.k])
-		case 2:
-			os.Setenv("SYNKER_ELASTICSEARCH_URI", "http://127.0.0.1:9200")
-			_ = os.Unsetenv(test.vars[test.k])
-		}
-
-		cmd.Env = append(os.Environ(), "FATAL=1")
+		cmd.Env = append(os.Environ(), fmt.Sprintf("FATAL_%s_%s=1", test.option, test.vars[test.k]))
 		err := cmd.Run()
-		assert.Error(err)
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			return
+		}
+		t.Fatalf("process ran with err %v, wanted exit status 1", err)
 	})
 }
 
-func TestMain_fail_api_os_variables(t *testing.T) {
-	var api_os_variable api_os_variable
+func TestMain_fail_os_variables(t *testing.T) {
+	var os_variable os_variable
 
-	api_os_variable.t = t
-	api_os_variable.vars = []string{
+	os_variable.t = t
+	os_variable.name = "TestMain_fail_os_variables"
+	os_variable.vars = []string{
 		"SYNKER_PG_URI",
 		"SYNKER_ELASTICSEARCH_URI",
 		"SYNKER_KAFKA_URI",
 	}
 
-	for k := range api_os_variable.vars {
-		api_os_variable.k = k
-		api_os_variable.testMain_fail_api_os_variables()
+	for _, os_var := range os_variable.vars {
+		os_variable.varsBackup = append(os_variable.varsBackup, os.Getenv(os_var))
 	}
-	os.Setenv("SYNKER_KAFKA_URI", "localhost:9092")
+
+	for _, option := range []string{"api", "init"} {
+		for k := range os_variable.vars {
+			cliArgs := []string{
+				"",
+				option,
+				"-c",
+				"processing/examples/schemas",
+			}
+			os_variable.k = k
+			os_variable.cliArgs = cliArgs
+			os_variable.option = option
+			_ = os.Unsetenv(os_variable.vars[k])
+			if k > 0 {
+				for index := range len(os_variable.vars) {
+					if k != index {
+						_ = os.Setenv(os_variable.vars[index], os_variable.varsBackup[index])
+					}
+				}
+			}
+			os_variable.testMain_fail_os_variables()
+		}
+	}
 }

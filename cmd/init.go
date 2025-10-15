@@ -2,16 +2,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/Lord-Y/synker/logger"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 // Init command options
-func Init(c *cli.Context) (z *cli.Command) {
+func Init() (z *cli.Command) {
 	return &cli.Command{
 		Name:  "init",
 		Usage: "Perform prerequisites related to elasticsearch / kafka / cockroachdb",
@@ -24,7 +25,7 @@ func Init(c *cli.Context) (z *cli.Command) {
 				Destination: &cmdValidate.ConfigDir,
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(context.Context, *cli.Command) error {
 			cmdValidate.Logger = logger.NewLogger()
 
 			if strings.TrimSpace(os.Getenv("SYNKER_PG_URI")) == "" {
@@ -40,7 +41,9 @@ func Init(c *cli.Context) (z *cli.Command) {
 				cmdValidate.Logger.Fatal().Err(fmt.Errorf("%s", msg)).Msg(msg)
 			}
 
-			cmdValidate.ParseAndValidateConfig()
+			if err := cmdValidate.ParseAndValidateConfig(); err != nil {
+				return err
+			}
 			cmdValidate.RunPrerequisitesOnly()
 			return nil
 		},

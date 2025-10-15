@@ -2,17 +2,18 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 // VersionDetails command options
-func VersionDetails(c *cli.Context) (z *cli.Command) {
+func VersionDetails() (z *cli.Command) {
 	return &cli.Command{
 		Name:  "version-details",
 		Usage: "print version details of the cli",
-		Action: func(c *cli.Context) error {
+		Action: func(context.Context, *cli.Command) error {
 			fmt.Printf("Version: %s\n", Version)
 			fmt.Printf("Revision: %s\n", revision)
 			fmt.Printf("Build date: %s\n", buildDate)

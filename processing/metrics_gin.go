@@ -115,8 +115,7 @@ type Prometheus struct {
 
 // PrometheusPushGateway contains the configuration for pushing to a Prometheus pushgateway (optional)
 type PrometheusPushGateway struct {
-	// Push interval in seconds
-	PushIntervalSeconds time.Duration
+	PushInterval time.Duration
 
 	// Push Gateway URL in format http://domain:port
 	// where JOBNAME can be any string of your choice
@@ -156,11 +155,11 @@ func NewPrometheus(subsystem string, customMetricsList ...[]*Metric) *Prometheus
 }
 
 // SetPushGateway sends metrics to a remote pushgateway exposed on pushGatewayURL
-// every pushIntervalSeconds. Metrics are fetched from metricsURL
-func (p *Prometheus) SetPushGateway(pushGatewayURL, metricsURL string, pushIntervalSeconds time.Duration) {
+// every pushInterval. Metrics are fetched from metricsURL
+func (p *Prometheus) SetPushGateway(pushGatewayURL, metricsURL string, pushInterval time.Duration) {
 	p.Ppg.PushGatewayURL = pushGatewayURL
 	p.Ppg.MetricsURL = metricsURL
-	p.Ppg.PushIntervalSeconds = pushIntervalSeconds
+	p.Ppg.PushInterval = pushInterval
 	p.startPushTicker()
 }
 
@@ -249,7 +248,7 @@ func (p *Prometheus) sendMetricsToPushGateway(metrics []byte) {
 }
 
 func (p *Prometheus) startPushTicker() {
-	ticker := time.NewTicker(time.Second * p.Ppg.PushIntervalSeconds)
+	ticker := time.NewTicker(time.Second * p.Ppg.PushInterval)
 	go func() {
 		for range ticker.C {
 			p.sendMetricsToPushGateway(p.getMetrics())
