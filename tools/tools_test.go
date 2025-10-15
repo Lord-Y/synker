@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/icrowley/fake"
+	"github.com/jackc/fake"
 	"github.com/stretchr/testify/assert"
 )
 

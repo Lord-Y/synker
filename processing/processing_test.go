@@ -11,7 +11,7 @@ import (
 
 	"github.com/Lord-Y/synker/commons"
 	"github.com/Lord-Y/synker/logger"
-	"github.com/icrowley/fake"
+	"github.com/jackc/fake"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
